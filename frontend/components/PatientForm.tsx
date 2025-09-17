@@ -2,16 +2,16 @@
 import React, { useState } from "react";
 
 const PatientForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [contact, setContact] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, age, contact });
-    setName("");
-    setAge("");
-    setContact("");
+    onSubmit({ firstName, lastName, email });
+    setFirstName("");
+    setLastName("");
+    setEmail("");
   };
 
   return (
@@ -21,23 +21,23 @@ const PatientForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => {
     >
       <input
         type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="border p-2 w-full"
-      />
-      <input
-        type="number"
-        placeholder="Age"
-        value={age}
-        onChange={(e) => setAge(e.target.value)}
+        placeholder="First Name"
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
         className="border p-2 w-full"
       />
       <input
         type="text"
-        placeholder="Contact"
-        value={contact}
-        onChange={(e) => setContact(e.target.value)}
+        placeholder="Last Name"
+        value={lastName}
+        onChange={(e) => setLastName(e.target.value)}
+        className="border p-2 w-full"
+      />
+      <input
+        type="text"
+        placeholder="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         className="border p-2 w-full"
       />
       <button

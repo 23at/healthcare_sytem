@@ -35,13 +35,30 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
    
+    - name: Install Newman
+      run: npm install -g newman
 
     - name: Run Postman API test
       run: | 
+        mkdir -p results
         newman run backend/tests/API_route_testing.postman_collection.json
-        --reporters cli,junit \
-        --reporter-junit-export results/newman-results.xml
+          --reporters cli,junit \
+          --reporter-junit-export results/newman-results.xml
 
+    - name: Upload Newman test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: newman-report
+        path: results/newman-results.xml
+
+    - name: Publish Newman test results
+      uses: dorny/test-reporter@v1
+      if: always()   # ensures it runs even if tests fail
+      with:
+        name: Postman API Tests
+        path: results/newman-results.xml
+        reporter: jest-junit
+        
     - name: Test with pytest
       run: |
         pytest

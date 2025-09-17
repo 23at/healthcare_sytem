@@ -36,7 +36,7 @@ class Prescription(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     patient_id=db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     medication_name=db.Column(db.String(100), nullable=False)
-    dosage=db.Column(db.String(50), nullable=False)
+    dosage=db.Column(db.String(100), nullable=False)
     start_date=db.Column(db.Date, nullable=False)
     end_date=db.Column(db.Date, nullable=True)
 

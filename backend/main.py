@@ -137,8 +137,10 @@ def add_prescription():
     patient_id=request.json["patientId"]
     medication_name=request.json["medicationName"]
     dosage=request.json["dosage"]
-    start_date=request.json["startDate"]
-    end_date=request.json.get("endDate", None)
+    date_data = request.get_json() 
+    start_date = datetime.strptime(date_data["startDate"], "%Y-%m-%d").date()
+
+    end_date= datetime.strptime(date_data["endDate"], "%Y-%m-%d").date()
 
     if not patient_id or not medication_name or not dosage or not start_date:
         return(
@@ -161,12 +163,19 @@ def update_prescription(prescription_id):
     if not prescription:
         return jsonify({"message": "Prescription not found"}),404
     data= request.json
+    if "startDate" in data:
+        try:
+            prescription.start_date = datetime.strptime(data["startDate"], "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format for startDate. Use YYYY-MM-DD"}), 400
+    if "endDate" in data:
+        try:
+            prescription.end_date = datetime.strptime(data["endDate"], "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format for endDate. Use YYYY-MM-DD"}), 400
     prescription.patient_id=data.get("patientId", prescription.patient_id)
     prescription.medication_name=data.get("medicationName", prescription.medication_name)
     prescription.dosage=data.get("dosage", prescription.dosage)
-    prescription.start_date=data.get("startDate", prescription.start_date)
-    prescription.end_date=data.get("endDate", prescription.end_date)
-
     db.session.commit()
     return jsonify({"message": "Prescription updated successfully"}), 200
 

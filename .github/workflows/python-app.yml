@@ -56,7 +56,7 @@ jobs:
         path: results/newman-results.xml
 
     - name: Publish Newman test results
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@v1.6.0 
       if: always()  
       with:
         name: Postman API Tests

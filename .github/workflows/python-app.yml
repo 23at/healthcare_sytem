@@ -43,7 +43,7 @@ jobs:
         mkdir -p results
         newman run backend/tests/API_route_testing.postman_collection.json \
           --reporters cli,junit \
-          --reporter-junit-export results/newman-results.xml || true
+          --reporter-junit-export results/newman-results.xml
 
   
     - name: Publish Newman test results

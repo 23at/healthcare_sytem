@@ -56,12 +56,10 @@ jobs:
         path: results/newman-results.xml
 
     - name: Publish Newman test results
-      uses: dorny/test-reporter@v1.6.0 
-      if: always()  
+      uses: mikepenz/action-junit-report@v1
       with:
-        name: Postman API Tests
-        path: results/newman-results.xml
-        reporter: junit
+          files: results/newman-results.xml
+
         
     - name: Test with pytest
       run: |

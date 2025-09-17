@@ -38,7 +38,7 @@ jobs:
 
     - name: Run Postman API test
       run: | 
-        newman run backend/tests/API_route_testing.postman_collection.json
+        newman run backend/tests/API_route_testing.postman_collection (1).json
         --reporters cli,junit \
         --reporter-junit-export results/newman-results.xml
 

@@ -5,15 +5,21 @@ from models import Visit
 from models import Prescription
 from datetime import datetime
 
-
 #API routes for paitent info
+
+@app.route("/patients/<int:patient_id>", methods=["GET"])
+def get_patient(patient_id):
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"patient": None, "message": "Patient not found"}), 200
+    return jsonify({"patient": patient.to_json()})
 
 
 @app.route("/patients", methods=["GET"])
 def get_patients():
     patients=Patient.query.all()
     json_patients= list(map(lambda p: p.to_json(), patients))
-    return jsonify({"patients": json_patients})
+    return jsonify({"patients": json_patients}),200
 
 @app.route("/add_patient", methods=["POST"])
 def add_patient():
@@ -33,7 +39,7 @@ def add_patient():
     except Exception as e:
         return jsonify({"message": str(e)}), 400
     
-    return jsonify({"message": "Patient added successfully"}), 201
+    return jsonify({"message": "Patient added successfully"}), 200
 
 @app.route("/update_patient/<int:patient_id>", methods=["PATCH"])
 def update_patient(patient_id):
@@ -64,12 +70,12 @@ def delete_patient(patient_id):
 
 #API routes for visits
 
-
 @app.route("/visits", methods=["GET"])
 def get_visits():
     visits=Visit.query.all()
     json_visits= list(map(lambda v: v.to_json(), visits))
     return jsonify({"visits": json_visits}), 201
+
 
 @app.route("/add_visit", methods=["POST"])
 def add_visit():
@@ -121,8 +127,6 @@ def delete_visit(visit_id):
     db.session.delete(visit)
     db.session.commit()
     return jsonify({"message": "Visit deleted successfully"}), 200
-
-
 
 #API routes for prescriptions
 

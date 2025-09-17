@@ -1,14 +1,16 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "../../../components/Layout";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-
-// Sample data – replace with real API fetch
-const samplePatients = [
-  { id: "1", name: "John Doe", age: 35, contact: "555-1234" },
-  { id: "2", name: "Jane Smith", age: 28, contact: "555-5678" },
-];
+import axios from "axios";
+import { set } from "zod";
+type Patient = {
+  email: string;
+  firstName: string;
+  id: number;
+  lastName: string;
+};
 
 const sampleVisits = [
   { id: "1", patientId: "1", date: "2025-09-17", diagnosis: "Flu" },
@@ -22,39 +24,75 @@ const samplePrescriptions = [
 
 export default function PatientDetailPage() {
   const params = useParams();
-  const patientId = params.id;
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [loading, setLoading] = useState(true);
+  const id = Number(params.id);
+
+  // const patientId = params.id;
+
+  useEffect(() => {
+    if (id) {
+      fetchPatient(id);
+    }
+  }, [id]);
+  const fetchPatient = async (patientId: Number) => {
+    try {
+      const res = await axios.get(
+        `http://127.0.0.1:5000/patients/${patientId}`
+      );
+      if (res.data?.patient) {
+        setPatient(res.data.patient);
+      } else {
+        setPatient(null); // no patient found
+      }
+    } catch (err) {
+      setPatient(null);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Find the patient
-  const patient = samplePatients.find((p) => p.id === patientId);
-  if (!patient)
+  // const patient = samplePatients.find((p) => p.id === patientId);
+  if (loading) {
     return (
       <Layout>
-        <p className="p-4">Patient not found</p>
+        <p className="p-4">Loading patient...</p>
       </Layout>
     );
+  }
+
+  if (!patient) {
+    return (
+      <Layout>
+        <p className="p-4 text-red-600">No patient found.</p>
+      </Layout>
+    );
+  }
 
   // Get visits and prescriptions for this patient
-  const visits = sampleVisits.filter((v) => v.patientId === patientId);
-  const prescriptions = samplePrescriptions.filter((pres) =>
-    visits.some((v) => v.id === pres.visitId)
-  );
+  // const visits = sampleVisits.filter((v) => v.patientId === patientId);
+  // const prescriptions = samplePrescriptions.filter((pres) =>
+  //   visits.some((v) => v.id === pres.visitId)
+  // );
 
   return (
     <Layout>
       <h2 className="text-xl font-bold mb-4">Patient Details</h2>
       <div className="bg-white p-4 rounded shadow mb-6">
         <p>
-          <strong>Name:</strong> {patient.name}
+          <strong>Name:</strong> {patient.firstName}
         </p>
         <p>
-          <strong>Age:</strong> {patient.age}
+          <strong>Age:</strong> {patient.lastName}
         </p>
         <p>
-          <strong>Contact:</strong> {patient.contact}
+          <strong>Contact:</strong> {patient.email}
         </p>
       </div>
 
-      <h3 className="text-lg font-semibold mb-2">Visits</h3>
+      {/* <h3 className="text-lg font-semibold mb-2">Visits</h3>
       {visits.length === 0 ? (
         <p>No visits recorded.</p>
       ) : (
@@ -100,7 +138,7 @@ export default function PatientDetailPage() {
             );
           })}
         </ul>
-      )}
+      )} */}
     </Layout>
   );
 }

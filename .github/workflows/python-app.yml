@@ -45,16 +45,7 @@ jobs:
           --reporters cli,junit \
           --reporter-junit-export results/newman-results.xml || true
 
-    - name: Debug Newman results
-      run: ls -R results
-
-
-    - name: Upload Newman test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: newman-report
-        path: results/newman-results.xml
-
+  
     - name: Publish Newman test results
       uses: mikepenz/action-junit-report@v1
       with:

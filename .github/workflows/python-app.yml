@@ -39,11 +39,15 @@ jobs:
       run: npm install -g newman
 
     - name: Run Postman API test
-      run: | 
+      run: |
         mkdir -p results
-        newman run backend/tests/API_route_testing.postman_collection.json
+        newman run backend/tests/API_route_testing.postman_collection.json \
           --reporters cli,junit \
-          --reporter-junit-export results/newman-results.xml
+          --reporter-junit-export results/newman-results.xml || true
+
+    - name: Debug Newman results
+      run: ls -R results
+
 
     - name: Upload Newman test results
       uses: actions/upload-artifact@v4

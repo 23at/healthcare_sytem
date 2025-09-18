@@ -30,7 +30,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:5000/patients",
+					"raw": "http://127.0.0.1:5000/patients?Content-Type=application/json",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -41,6 +41,12 @@
 					"port": "5000",
 					"path": [
 						"patients"
+					],
+					"query": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
 					]
 				}
 			},
@@ -53,8 +59,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status is 201\", function () {\r",
-							"    pm.response.to.have.status(201);\r",
+							"pm.test(\"Status is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
 							"});\r",
 							"\r",
 							"pm.test(\"Message returned\", function () {\r",
@@ -318,8 +324,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status is 201\", function () {\r",
-							"    pm.response.to.have.status(201);\r",
+							"pm.test(\"Status is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
 							"});\r",
 							"\r",
 							"pm.test(\"Message returned\", function () {\r",

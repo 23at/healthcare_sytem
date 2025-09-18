@@ -1,9 +1,40 @@
-from flask import request, jsonify
+from flask import request, jsonify, session
 from config import app, db
 from models import Patient
 from models import Visit
 from models import Prescription
+from models import User
 from datetime import datetime
+from werkzeug.security import check_password_hash
+
+#API route for user login
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    data=request.get_json()
+    if not data or "username" not in data or "password" not in data:
+        return jsonify({"message": "Missing username or password"}), 400
+
+    user= User.query.filter_by(username=data["username"]).first()
+
+    if user and check_password_hash(user.password_hash, data["password"]):
+       
+        response = jsonify({"message": "login successful"})
+        return response, 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
+
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "logout successful"}), 200
+    
+
+
+
 
 #API routes for paitent info
 

@@ -49,3 +49,15 @@ class Prescription(db.Model):
             "startDate": self.start_date.isoformat(),
             "endDate": self.end_date.isoformat() if self.end_date else None
         }
+
+class User(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    username=db.Column(db.String(80), unique=True, nullable=False)
+    password_hash=db.Column(db.String(128), nullable=False)
+    role=db.Column(db.String(50), nullable=False)
+
+    def to_json(self):
+        return{
+            "id": self.id,
+            "username": self.username
+        }

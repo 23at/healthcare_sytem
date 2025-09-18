@@ -53,7 +53,7 @@ jobs:
 
   
     - name: Upload Newman test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: newman-results
         path: results/newman-results.xml

@@ -37,7 +37,7 @@ jobs:
     
     - name: Start Flask server
       run: |
-       pip install -r requirements.txt
+       pip install -r backend/requirements.txt
        python backend/main.py &
        sleep 5  # give it time to start
 

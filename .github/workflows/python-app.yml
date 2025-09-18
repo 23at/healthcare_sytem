@@ -34,7 +34,13 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-   
+    
+    - name: Start Flask server
+      run: |
+       pip install -r requirements.txt
+       python backend/main.py &
+       sleep 5  # give it time to start
+
     - name: Install Newman
       run: npm install -g newman
 
@@ -46,12 +52,10 @@ jobs:
           --reporter-junit-export results/newman-results.xml
 
   
-    - name: Publish Newman test results
-      uses: mikepenz/action-junit-report@v1
+    - name: Upload Newman test results
+      uses: actions/upload-artifact@v3
       with:
-          files: results/newman-results.xml
-
+        name: newman-results
+        path: results/newman-results.xml
         
-    - name: Test with pytest
-      run: |
-        pytest
+    

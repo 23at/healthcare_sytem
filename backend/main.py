@@ -181,7 +181,7 @@ def update_prescription(prescription_id):
     prescription.medication_name=data.get("medicationName", prescription.medication_name)
     prescription.dosage=data.get("dosage", prescription.dosage)
     db.session.commit()
-    return jsonify({"message": "Prescription updated successfully"}), 200
+    return jsonify({"message": "Prescription updated successfully"}), 201
 
 @app.route("/delete_prescription/<int:prescription_id>", methods=["DELETE"])
 def delete_prescription(prescription_id):

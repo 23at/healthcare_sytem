@@ -5,8 +5,8 @@ class Patient(db.Model):
     first_name=db.Column(db.String(80), unique=False, nullable=False)
     last_name=db.Column(db.String(80), unique=False, nullable=False)
     email=db.Column(db.String(120), unique=True, nullable=False)
-    visits = db.relationship('Visit', backref='patient', lazy=True)
-    prescriptions = db.relationship('Prescription', backref='patient', lazy=True)
+    visits = db.relationship('Visit', backref='patient', lazy=True, cascade='all, delete-orphan')
+    prescriptions = db.relationship('Prescription', backref='patient', lazy=True, cascade='all, delete-orphan')
 
 
 
@@ -20,7 +20,7 @@ class Patient(db.Model):
 
 class Visit(db.Model):
     id=db.Column(db.Integer, primary_key=True)
-    patient_id=db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    patient_id=db.Column(db.Integer, db.ForeignKey('patient.id', ondelete='CASCADE'), nullable=False)
     visit_date=db.Column(db.Date, nullable=False)
     reason=db.Column(db.String(200), nullable=False)
 
@@ -34,7 +34,7 @@ class Visit(db.Model):
 
 class Prescription(db.Model):
     id=db.Column(db.Integer, primary_key=True)
-    patient_id=db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    patient_id=db.Column(db.Integer, db.ForeignKey('patient.id', ondelete='CASCADE'), nullable=False)
     medication_name=db.Column(db.String(100), nullable=False)
     dosage=db.Column(db.String(100), nullable=False)
     start_date=db.Column(db.Date, nullable=False)

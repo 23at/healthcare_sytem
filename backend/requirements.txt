@@ -1,4 +1,4 @@
 flask
 flask_sqlalchemy
 flask_cors
-werkzeug.security
+werkzeug

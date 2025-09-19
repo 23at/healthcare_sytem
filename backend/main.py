@@ -6,6 +6,16 @@ from models import Prescription
 from models import User
 from datetime import datetime
 from werkzeug.security import check_password_hash
+from functools import wraps
+
+#decorator to protect routes that require authentication
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify({"error": "Unauthorized. Please log in first."}),401
+        return f(*args, **kwargs)
+    return decorated_function
 
 #API route for user login
 
@@ -19,9 +29,8 @@ def login():
     user= User.query.filter_by(username=data["username"]).first()
 
     if user and check_password_hash(user.password_hash, data["password"]):
-       
-        response = jsonify({"message": "login successful"})
-        return response, 200
+        session["user_id"] = user.id 
+        return jsonify({"message": "login successful"}),200     
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
@@ -39,24 +48,28 @@ def logout():
 #API routes for paitent info
 
 @app.route("/patients/<int:patient_id>", methods=["GET"])
+@login_required
 def get_patient(patient_id):
     patient = Patient.query.get(patient_id)
     if not patient:
-        return jsonify({"patient": None, "message": "Patient not found"}), 200
+        return jsonify({"patient": None, "message": "Patient not found"}), 404
     return jsonify({"patient": patient.to_json()})
 
 
 @app.route("/patients", methods=["GET"])
+@login_required
 def get_patients():
     patients=Patient.query.all()
     json_patients= list(map(lambda p: p.to_json(), patients))
     return jsonify({"patients": json_patients}),200
 
 @app.route("/add_patient", methods=["POST"])
+@login_required
 def add_patient():
-    first_name=request.json["firstName"]
-    last_name=request.json["lastName"]
-    email=request.json["email"]
+    data= request.get_json()
+    first_name=data.get("firstName")
+    last_name=data.get("lastName")
+    email=data.get("email")
    
 
     if not first_name or not last_name or not email:
@@ -73,6 +86,7 @@ def add_patient():
     return jsonify({"message": "Patient added successfully"}), 200
 
 @app.route("/update_patient/<int:patient_id>", methods=["PATCH"])
+@login_required
 def update_patient(patient_id):
     patient= Patient.query.get(patient_id)
 
@@ -87,6 +101,7 @@ def update_patient(patient_id):
     return jsonify({"message": "Patient updated successfully"}), 200
 
 @app.route("/delete_patient/<int:patient_id>", methods=["DELETE"])
+@login_required
 def delete_patient(patient_id):
     patient= Patient.query.get(patient_id)
 
@@ -102,23 +117,33 @@ def delete_patient(patient_id):
 #API routes for visits
 
 @app.route("/visits", methods=["GET"])
+@login_required
 def get_visits():
     visits=Visit.query.all()
     json_visits= list(map(lambda v: v.to_json(), visits))
-    return jsonify({"visits": json_visits}), 201
+    return jsonify({"visits": json_visits}), 200
 
 
 @app.route("/add_visit", methods=["POST"])
+@login_required
 def add_visit():
-    patient_id=request.json["patientId"]
     data = request.get_json() 
-    visit_date = datetime.strptime(data["visitDate"], "%Y-%m-%d").date()
-    reason=request.json["reason"]
+    patient_id= data.get("patientId")
+    visit_date = data.get("visitDate")
+    reason=data.get("reason")
 
     if not patient_id or not visit_date or not reason:
-        return(
-             jsonify({"message": "Missing data"}), 400
-        )
+        return jsonify({"message": "Missing data"}), 400
+        
+    try:
+        visit_date=datetime.strptime(visit_date, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+    
+    patient= Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found"}), 404
+    
     new_visit=Visit(patient_id=patient_id, visit_date=visit_date, reason=reason)
     try:
         db.session.add(new_visit)
@@ -129,6 +154,7 @@ def add_visit():
     return jsonify({"message": "Visit added successfully"}), 201
 
 @app.route("/update_visit/<int:visit_id>", methods=["PATCH"])
+@login_required
 def update_visit(visit_id):
     visit= Visit.query.get(visit_id)
 
@@ -149,6 +175,7 @@ def update_visit(visit_id):
     return jsonify({"message": "Visit updated successfully"}), 200
 
 @app.route("/delete_visit/<int:visit_id>", methods=["DELETE"])
+@login_required
 def delete_visit(visit_id):
     visit= Visit.query.get(visit_id)
 
@@ -162,27 +189,34 @@ def delete_visit(visit_id):
 #API routes for prescriptions
 
 @app.route("/prescriptions", methods=["GET"])
+@login_required
 def get_prescriptions():
     prescriptions=Prescription.query.all()
     json_prescriptions= list(map(lambda p: p.to_json(), prescriptions))
     return jsonify({"prescriptions": json_prescriptions})
 
 @app.route("/add_prescription", methods=["POST"])
+@login_required
 def add_prescription():
-    patient_id=request.json["patientId"]
-    medication_name=request.json["medicationName"]
-    dosage=request.json["dosage"]
-    date_data = request.get_json() 
-    start_date = datetime.strptime(date_data["startDate"], "%Y-%m-%d").date()
-
-    end_date= datetime.strptime(date_data["endDate"], "%Y-%m-%d").date()
+    data= request.get_json()
+    patient_id=data.get("patientId")
+    medication_name=data.get("medicationName")
+    dosage=data.get("dosage") 
+    start_date = data.get("startDate")
+    end_date = data.get("endDate")
 
     if not patient_id or not medication_name or not dosage or not start_date:
-        return(
-             jsonify({"message": "Missing data"}), 400
-        )
-    new_prescription=Prescription(patient_id=patient_id, medication_name=medication_name, dosage=dosage, start_date=start_date, end_date=end_date)
+        return jsonify({"message": "Missing data"}), 400
     
+    try:
+        start_date=datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date=datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+    patient= Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found"}), 404
+    new_prescription=Prescription(patient_id=patient_id, medication_name=medication_name, dosage=dosage, start_date=start_date, end_date=end_date)
     try:
         db.session.add(new_prescription)
         db.session.commit()
@@ -192,6 +226,7 @@ def add_prescription():
     return jsonify({"message": "Prescription added successfully"}), 201
 
 @app.route("/update_prescription/<int:prescription_id>", methods=["PATCH"])
+@login_required
 def update_prescription(prescription_id):
     prescription= Prescription.query.get(prescription_id)
 
@@ -212,9 +247,10 @@ def update_prescription(prescription_id):
     prescription.medication_name=data.get("medicationName", prescription.medication_name)
     prescription.dosage=data.get("dosage", prescription.dosage)
     db.session.commit()
-    return jsonify({"message": "Prescription updated successfully"}), 201
+    return jsonify({"message": "Prescription updated successfully"}), 200
 
 @app.route("/delete_prescription/<int:prescription_id>", methods=["DELETE"])
+@login_required
 def delete_prescription(prescription_id):
     prescription= Prescription.query.get(prescription_id)
 

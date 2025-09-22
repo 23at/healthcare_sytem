@@ -71,15 +71,6 @@ def logout():
 
 #API routes for paitent info
 
-@app.route("/patients/<int:patient_id>", methods=["GET"])
-@login_required
-def get_patient(patient_id):
-    patient = Patient.query.get(patient_id)
-    if not patient:
-        return jsonify({"patient": None, "message": "Patient not found"}), 404
-    return jsonify({"patient": patient.to_json()})
-
-
 @app.route("/patients", methods=["GET"])
 @login_required
 def get_patients():
@@ -107,7 +98,7 @@ def add_patient():
     except Exception as e:
         return jsonify({"message": str(e)}), 400
     
-    return jsonify({"message": "Patient added successfully"}), 200
+    return jsonify({"message": "Patient added successfully"}), 201
 
 @app.route("/update_patient/<int:patient_id>", methods=["PATCH"])
 @login_required

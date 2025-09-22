@@ -17,6 +17,30 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+#admins user creation 
+@app.route('/create_user', methods=["POST"])
+@login_required
+def create_user():
+    current_user= User.query.get(session["user_id"])
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    data = request.get_json()
+    username = data.get("username")
+    password_hash = data.get("passwordHash")
+    role = data.get("role", "user")
+    if not username or not password_hash or not role:
+        return jsonify({"message":"Missing data"}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({"message": "Username already exists"}), 400
+    new_user= User(username=username, password_hash=password_hash, role=role)
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    return jsonify({"message": "User created successfully"}), 201
+
+
 #API route for user login
 
 

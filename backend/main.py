@@ -5,7 +5,7 @@ from models import Visit
 from models import Prescription
 from models import User
 from datetime import datetime
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 
 #decorator to protect routes that require authentication
@@ -21,13 +21,14 @@ def login_required(f):
 @app.route('/create_user', methods=["POST"])
 @login_required
 def create_user():
-    current_user= User.query.get(session["user_id"])
+    current_user= db.session.get(User, session["user_id"])
     if current_user.role !="admin":
         return jsonify({"error": "Forbidden. Admins only."}), 403
     data = request.get_json()
     username = data.get("username")
-    password_hash = data.get("passwordHash")
+    password = data.get("password")
     role = data.get("role", "user")
+    password_hash = generate_password_hash(password)
     if not username or not password_hash or not role:
         return jsonify({"message":"Missing data"}), 400
     if User.query.filter_by(username=username).first():
@@ -39,6 +40,47 @@ def create_user():
     except Exception as e:
         return jsonify({"message": str(e)}), 400
     return jsonify({"message": "User created successfully"}), 201
+
+@app.route('/users', methods=["GET"])
+@login_required
+def get_users():
+    current_user= User.query.get(session["user_id"])
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    users=User.query.all()
+    json_users= list(map(lambda u: u.to_json(), users))
+    return jsonify({"users": json_users}),200
+
+@app.route('/delete_user/<int:user_id>', methods=["DELETE"])
+@login_required
+def delete_user(user_id):
+    current_user= User.query.get(session["user_id"])
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    user= User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}),404
+    if user.id==current_user.id:
+        return jsonify({"message": "You cannot delete yourself"}),400
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted successfully"}), 200
+@app.route('/update_user/<int:user_id>', methods=["PATCH"])
+@login_required
+def update_user(user_id):
+    current_user= User.query.get(session["user_id"])
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    user= User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}),404
+    data= request.json
+    user.username=data.get("username", user.username)
+    user.password_hash=data.get("passwordHash", user.password_hash)
+    user.role=data.get("role", user.role)
+    db.session.commit()
+    return jsonify({"message": "User updated successfully"}), 200
+
 
 
 #API route for user login

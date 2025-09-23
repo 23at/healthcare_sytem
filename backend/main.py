@@ -8,8 +8,6 @@ from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 
-from werkzeug.security import generate_password_hash
-
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username="admin").first():
@@ -26,13 +24,52 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route("/check_session", methods=["GET"])
+def check_session():
+    if "user_id" in session:
+        user = User.query.get(session["user_id"])
+        return jsonify({
+            "logged_in": True,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": user.role
+            }
+        }), 200
+    return jsonify({"logged_in": False}), 401
+
+
 #admins user creation 
+# @app.route("/users", methods=["GET"])
+# @login_required
+# def get_users():
+#     current_user = User.query.get(session["user_id"])
+#     if current_user.role != "admin":
+#         return jsonify({"error": "Forbidden. Admins only."}), 403
+
+#     users = User.query.all()
+#     user_list = []
+#     for u in users:
+#         user_info = {
+#             "id": u.id,
+#             "username": u.username,
+#             "role": u.role,
+#         }
+#         # ⚠️ include hash only for debugging (remove in production)
+#         user_info["password_hash"] = u.password_hash  
+#         user_list.append(user_info)
+
+#     return jsonify(user_list), 200
+
 @app.route('/create_user', methods=["POST"])
 @login_required
 def create_user():
-    current_user= db.session.get(User, session.get("user_id"))
-    if current_user.role !="admin":
+    # current_user= db.session.get(User, session.get("user_id"))
+    # if current_user.role !="admin":
+    current_user = User.query.get(session["user_id"])
+    if current_user.role != "admin":
         return jsonify({"error": "Forbidden. Admins only."}), 403
+    
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
@@ -42,12 +79,19 @@ def create_user():
         return jsonify({"message":"Missing data"}), 400
     if User.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
-    new_user= User(username=username, password_hash=password_hash, role=role)
+
+    new_user = User(
+        username=username, 
+        password_hash=generate_password_hash(password), 
+        role=role
+    )
+
     try:
         db.session.add(new_user)
         db.session.commit()
     except Exception as e:
         return jsonify({"message": str(e)}), 400
+
     return jsonify({"message": "User created successfully"}), 201
 
 @app.route('/users', methods=["GET"])
@@ -75,6 +119,7 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"message": "User deleted successfully"}), 200
+
 @app.route('/update_user/<int:user_id>', methods=["PATCH"])
 @login_required
 def update_user(user_id):
@@ -333,4 +378,4 @@ def delete_prescription(prescription_id):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True,port=8080)

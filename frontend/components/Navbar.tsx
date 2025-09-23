@@ -1,8 +1,20 @@
+import api from "@/api/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   // In real scenario, check user role here
   //   const userRole = "Doctor"; // or 'Admin'
+
+  const router = useRouter();
+  const handleLogout = async () => {
+    try {
+      await api.post("/logout"); // clear Flask session
+      router.push("/login"); // redirect to login page
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   return (
     <nav className="bg-blue-600 text-white p-4 flex justify-between">
@@ -15,7 +27,12 @@ const Navbar = () => {
         <Link href="/visits">Visits</Link>
         {/* {userRole === "Admin" && ( */}
         <Link href="/prescriptions">Prescriptions</Link>
-        {/* )} */}
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 text-white px-3 rounded"
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );

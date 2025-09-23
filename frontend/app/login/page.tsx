@@ -66,4 +66,9 @@ const LoginPage = () => {
   );
 };
 
+
+"use client";
+
+
+
 export default LoginPage;

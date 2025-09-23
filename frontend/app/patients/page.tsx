@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
-import PatientForm from "../../components/PatientForm";
-import axios from "axios";
+import PatientForm, { PatientFormData } from "../../components/PatientForm";
+import api from "@/api/api";
+import useAuth from "@/hooks/useAuth";
 
 type Patient = {
   id: number;
@@ -14,6 +15,7 @@ type Patient = {
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  useAuth();
 
   useEffect(() => {
     fetchPatients();
@@ -21,29 +23,26 @@ export default function PatientsPage() {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/patients");
+      const res = await api.get("/patients", { withCredentials: true });
       setPatients(res.data.patients);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const addPatient = async (data: any) => {
+  const addPatient = async (data: PatientFormData) => {
     try {
-      await axios.post("http://127.0.0.1:5000/add_patient", data);
+      await api.post("/add_patient", data);
       fetchPatients();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const updatePatient = async (data: any) => {
+  const updatePatient = async (data: PatientFormData) => {
     if (!editingPatient) return;
     try {
-      await axios.patch(
-        `http://127.0.0.1:5000/update_patient/${editingPatient.id}`,
-        data
-      );
+      await api.patch(`/update_patient/${editingPatient.id}`, data);
       setEditingPatient(null);
       fetchPatients();
     } catch (err) {
@@ -54,14 +53,14 @@ export default function PatientsPage() {
   const deletePatient = async (id: number) => {
     if (!confirm("Are you sure you want to delete this patient?")) return;
     try {
-      await axios.delete(`http://127.0.0.1:5000/delete_patient/${id}`);
+      await api.delete(`/delete_patient/${id}`);
       fetchPatients();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: PatientFormData) => {
     if (editingPatient) {
       updatePatient(data);
     } else {
@@ -79,7 +78,16 @@ export default function PatientsPage() {
       <PatientForm
         key={editingPatient?.id || "new"}
         onSubmit={handleFormSubmit}
-        {...(editingPatient || {})}
+        onCancel={() => setEditingPatient(null)}
+        initialData={
+          editingPatient
+            ? {
+                firstName: editingPatient.firstName,
+                lastName: editingPatient.lastName,
+                email: editingPatient.email,
+              }
+            : undefined
+        }
       />
 
       <h3 className="text-lg font-semibold mt-6 mb-2">Patient List</h3>
@@ -92,7 +100,14 @@ export default function PatientsPage() {
               <span>
                 {p.firstName} {p.lastName} | {p.email}
               </span>
+
               <div className="space-x-2">
+                <button
+                  className="bg-blue-600 text-white px-2 py-1 rounded"
+                  onClick={() => (window.location.href = `/patients/${p.id}`)}
+                >
+                  View
+                </button>
                 <button
                   className="bg-yellow-500 text-white px-2 py-1 rounded"
                   onClick={() => setEditingPatient(p)}

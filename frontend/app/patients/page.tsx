@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
-import PatientForm from "../../components/PatientForm";
-import axios from "axios";
+import PatientForm, { PatientFormData } from "../../components/PatientForm";
 import api from "@/api/api";
 import useAuth from "@/hooks/useAuth";
 
@@ -31,7 +30,7 @@ export default function PatientsPage() {
     }
   };
 
-  const addPatient = async (data: any) => {
+  const addPatient = async (data: PatientFormData) => {
     try {
       await api.post("/add_patient", data);
       fetchPatients();
@@ -40,7 +39,7 @@ export default function PatientsPage() {
     }
   };
 
-  const updatePatient = async (data: any) => {
+  const updatePatient = async (data: PatientFormData) => {
     if (!editingPatient) return;
     try {
       await api.patch(`/update_patient/${editingPatient.id}`, data);
@@ -61,7 +60,7 @@ export default function PatientsPage() {
     }
   };
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: PatientFormData) => {
     if (editingPatient) {
       updatePatient(data);
     } else {
@@ -79,7 +78,16 @@ export default function PatientsPage() {
       <PatientForm
         key={editingPatient?.id || "new"}
         onSubmit={handleFormSubmit}
-        {...(editingPatient || {})}
+        onCancel={() => setEditingPatient(null)}
+        initialData={
+          editingPatient
+            ? {
+                firstName: editingPatient.firstName,
+                lastName: editingPatient.lastName,
+                email: editingPatient.email,
+              }
+            : undefined
+        }
       />
 
       <h3 className="text-lg font-semibold mt-6 mb-2">Patient List</h3>
@@ -92,7 +100,14 @@ export default function PatientsPage() {
               <span>
                 {p.firstName} {p.lastName} | {p.email}
               </span>
+
               <div className="space-x-2">
+                <button
+                  className="bg-blue-600 text-white px-2 py-1 rounded"
+                  onClick={() => (window.location.href = `/patients/${p.id}`)}
+                >
+                  View
+                </button>
                 <button
                   className="bg-yellow-500 text-white px-2 py-1 rounded"
                   onClick={() => setEditingPatient(p)}

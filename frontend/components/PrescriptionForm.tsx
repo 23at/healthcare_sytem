@@ -1,33 +1,52 @@
 "use client";
-import React, { useState } from "react";
 
-type Visit = {
+import React, { useEffect, useState } from "react";
+
+export type VisitProps = {
   id: number;
   patientId: number;
   visitDate: string;
   reason: string;
 };
 
+export type PrescriptionProps = {
+  id?: number;
+  patientId: number;
+  visitId?: number;
+  medicationName: string;
+  dosage: string;
+  startDate: string;
+  endDate?: string;
+};
+
 type PrescriptionFormProps = {
-  visits: Visit[];
-  onSubmit: (data: {
-    patientId: number;
-    medicationName: string;
-    dosage: string;
-    startDate: string;
-    endDate?: string;
-  }) => void;
+  visits: VisitProps[];
+  initialData?: PrescriptionProps;
+  onSubmit: (data: PrescriptionProps) => void;
+  onCancel?: () => void;
 };
 
 const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
   visits,
+  initialData,
   onSubmit,
+  onCancel,
 }) => {
-  const [visitId, setVisitId] = useState<number>(visits[0]?.id || 0);
-  const [medicationName, setMedicationName] = useState("");
-  const [dosage, setDosage] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [visitId, setVisitId] = useState<number | undefined>(
+    initialData?.visitId || visits[0]?.id
+  );
+  const [medicationName, setMedicationName] = useState(
+    initialData?.medicationName || ""
+  );
+  const [dosage, setDosage] = useState(initialData?.dosage || "");
+  const [startDate, setStartDate] = useState(initialData?.startDate || "");
+  const [endDate, setEndDate] = useState(initialData?.endDate || "");
+
+  useEffect(() => {
+    if (visits.length > 0 && visitId === undefined) {
+      setVisitId(visits[0].id);
+    }
+  }, [visits, visitId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,26 +55,24 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
       return;
     }
 
-    const visit = visits.find((v) => v.id === visitId);
-    if (!visit) {
-      alert("Selected visit not found");
-      return;
-    }
-
     onSubmit({
-      patientId: visit.patientId,
+      patientId: visits.find((v) => v.id === visitId)?.patientId || 0,
+      visitId,
       medicationName,
       dosage,
       startDate,
       endDate: endDate || undefined,
+      id: initialData?.id,
     });
 
-    // Clear form
-    setMedicationName("");
-    setDosage("");
-    setStartDate("");
-    setEndDate("");
-    setVisitId(visits[0]?.id || 0);
+    // Clear form if adding new
+    if (!initialData) {
+      setMedicationName("");
+      setDosage("");
+      setStartDate("");
+      setEndDate("");
+      setVisitId(visits[0]?.id);
+    }
   };
 
   return (
@@ -69,6 +86,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
           value={visitId}
           onChange={(e) => setVisitId(Number(e.target.value))}
           className="border p-2 w-full mt-1"
+          required
         >
           {visits.map((v) => (
             <option key={v.id} value={v.id}>
@@ -86,6 +104,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
           onChange={(e) => setMedicationName(e.target.value)}
           className="border p-2 w-full mt-1"
           placeholder="e.g., Paracetamol"
+          required
         />
       </label>
 
@@ -97,6 +116,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
           onChange={(e) => setDosage(e.target.value)}
           className="border p-2 w-full mt-1"
           placeholder="e.g., 500mg"
+          required
         />
       </label>
 
@@ -107,6 +127,7 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           className="border p-2 w-full mt-1"
+          required
         />
       </label>
 
@@ -120,12 +141,23 @@ const PrescriptionForm: React.FC<PrescriptionFormProps> = ({
         />
       </label>
 
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded mt-2"
-      >
-        Add Prescription
-      </button>
+      <div className="flex space-x-2 mt-2">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          {initialData ? "Update Prescription" : "Add Prescription"}
+        </button>
+        {initialData && onCancel && (
+          <button
+            type="button"
+            className="bg-gray-500 text-white px-4 py-2 rounded"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 };

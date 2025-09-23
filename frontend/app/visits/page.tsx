@@ -1,7 +1,8 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import Layout from "../../components/Layout";
-import VisitForm from "@/components/VisitForm";
+import VisitForm, { Visit } from "@/components/VisitForm";
 import api from "@/api/api";
 import useAuth from "@/hooks/useAuth";
 
@@ -12,23 +13,17 @@ type Patient = {
   email: string;
 };
 
-type Visit = {
-  id: number;
-  patientId: number;
-  visitDate: string;
-  reason: string;
-};
-
 const VisitsPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
 
   useAuth();
+
   // Fetch patients
   const fetchPatients = async () => {
     try {
-      const res = await api.get("/patients");
+      const res = await api.get("/patients", { withCredentials: true });
       setPatients(res.data.patients || []);
     } catch (err) {
       console.error(err);
@@ -39,7 +34,7 @@ const VisitsPage: React.FC = () => {
   // Fetch visits
   const fetchVisits = async () => {
     try {
-      const res = await api.get("/visits");
+      const res = await api.get("/visits", { withCredentials: true });
       setVisits(res.data.visits || []);
     } catch (err) {
       console.error(err);
@@ -54,14 +49,15 @@ const VisitsPage: React.FC = () => {
     fetchVisits();
   }, []);
 
+  // Add visit
   const addVisit = async (data: {
     patientId: number;
     visitDate: string;
     reason: string;
   }) => {
     try {
-      await api.post("/add_visit", data);
-      fetchVisits(); // refresh visit list
+      await api.post("/add_visit", data, { withCredentials: true });
+      fetchVisits();
       alert("Visit added successfully");
     } catch (err) {
       console.error(err);
@@ -69,34 +65,46 @@ const VisitsPage: React.FC = () => {
     }
   };
 
+  // Update visit
+  const updateVisit = async (
+    id: number,
+    data: { patientId: number; visitDate: string; reason: string }
+  ) => {
+    try {
+      await api.patch(`/update_visit/${id}`, data, { withCredentials: true });
+      fetchVisits();
+      alert("Visit updated successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update visit");
+    }
+  };
+
+  // Delete visit
+  const deleteVisit = async (id: number) => {
+    try {
+      await api.delete(`/delete_visit/${id}`, { withCredentials: true });
+      fetchVisits();
+      alert("Visit deleted successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete visit");
+    }
+  };
+
+  if (loading) return <p>Loading visits...</p>;
+
   return (
     <Layout>
       <h2 className="text-xl font-bold mb-4">Visits</h2>
 
-      <VisitForm onSubmit={addVisit} patients={patients} />
-
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2">All Visits</h3>
-        {loading ? (
-          <p>Loading visits...</p>
-        ) : visits.length === 0 ? (
-          <p>No visits recorded.</p>
-        ) : (
-          <ul className="bg-white rounded shadow divide-y">
-            {visits.map((v) => {
-              const patient = patients.find((p) => p.id === v.patientId);
-              return (
-                <li key={v.id} className="p-2">
-                  <strong>Patient:</strong> {patient?.firstName}{" "}
-                  {patient?.lastName} <br />
-                  <strong>Date:</strong> {v.visitDate} <br />
-                  <strong>Reason:</strong> {v.reason}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <VisitForm
+        patients={patients}
+        visits={visits}
+        onAdd={addVisit}
+        onUpdate={updateVisit}
+        onDelete={deleteVisit}
+      />
     </Layout>
   );
 };

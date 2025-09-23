@@ -2,7 +2,7 @@
 import api from "@/api/api";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
-
+import { AxiosError } from "axios";
 const LoginPage = () => {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -30,8 +30,9 @@ const LoginPage = () => {
     try {
       await api.post("/login", { username, password });
       router.push("/patients");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "login failed");
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ message?: string }>;
+      setError(axiosError.response?.data?.message || "login failed");
     }
   };
   if (loading) {

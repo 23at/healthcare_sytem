@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import PatientForm from "../../components/PatientForm";
 import axios from "axios";
+import api from "@/api/api";
+import useAuth from "@/hooks/useAuth";
 
 type Patient = {
   id: number;
@@ -14,6 +16,7 @@ type Patient = {
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  useAuth();
 
   useEffect(() => {
     fetchPatients();
@@ -21,7 +24,7 @@ export default function PatientsPage() {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/patients");
+      const res = await api.get("/patients", { withCredentials: true });
       setPatients(res.data.patients);
     } catch (err) {
       console.error(err);
@@ -30,7 +33,7 @@ export default function PatientsPage() {
 
   const addPatient = async (data: any) => {
     try {
-      await axios.post("http://127.0.0.1:5000/add_patient", data);
+      await api.post("/add_patient", data);
       fetchPatients();
     } catch (err) {
       console.error(err);
@@ -40,10 +43,7 @@ export default function PatientsPage() {
   const updatePatient = async (data: any) => {
     if (!editingPatient) return;
     try {
-      await axios.patch(
-        `http://127.0.0.1:5000/update_patient/${editingPatient.id}`,
-        data
-      );
+      await api.patch(`/update_patient/${editingPatient.id}`, data);
       setEditingPatient(null);
       fetchPatients();
     } catch (err) {
@@ -54,7 +54,7 @@ export default function PatientsPage() {
   const deletePatient = async (id: number) => {
     if (!confirm("Are you sure you want to delete this patient?")) return;
     try {
-      await axios.delete(`http://127.0.0.1:5000/delete_patient/${id}`);
+      await api.delete(`/delete_patient/${id}`);
       fetchPatients();
     } catch (err) {
       console.error(err);

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Layout from "../../components/Layout";
 import VisitForm from "@/components/VisitForm";
+import api from "@/api/api";
+import useAuth from "@/hooks/useAuth";
 
 type Patient = {
   id: number;
@@ -23,10 +24,11 @@ const VisitsPage: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
 
+  useAuth();
   // Fetch patients
   const fetchPatients = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/patients");
+      const res = await api.get("/patients");
       setPatients(res.data.patients || []);
     } catch (err) {
       console.error(err);
@@ -37,7 +39,7 @@ const VisitsPage: React.FC = () => {
   // Fetch visits
   const fetchVisits = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/visits");
+      const res = await api.get("/visits");
       setVisits(res.data.visits || []);
     } catch (err) {
       console.error(err);
@@ -58,7 +60,7 @@ const VisitsPage: React.FC = () => {
     reason: string;
   }) => {
     try {
-      await axios.post("http://127.0.0.1:5000/add_visit", data);
+      await api.post("/add_visit", data);
       fetchVisits(); // refresh visit list
       alert("Visit added successfully");
     } catch (err) {

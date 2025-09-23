@@ -40,3 +40,13 @@ jobs:
           sleep 5s;
           echo "Running Security Check 3"
           sleep 5s;
+  deployment:
+    name: Deployment
+    runs-on: ubuntu-latest
+    needs: [lintTest, securityCheck]
+    steps:
+      - name: Deploy Application
+        run: |
+          echo "Deploying Application"
+          sleep 5s;
+          echo "Application Deployed"

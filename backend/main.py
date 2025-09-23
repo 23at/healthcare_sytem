@@ -5,9 +5,15 @@ from models import Visit
 from models import Prescription
 from models import User
 from datetime import datetime
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-from werkzeug.security import generate_password_hash
+
+with app.app_context():
+    db.create_all()
+    if not User.query.filter_by(username="admin").first():
+        admin = User(username="admin", password_hash=generate_password_hash("adminpass"), role="admin")
+        db.session.add(admin)
+        db.session.commit()
 
 #decorator to protect routes that require authentication
 def login_required(f):
@@ -34,42 +40,43 @@ def check_session():
 
 
 #admins user creation 
-@app.route("/users", methods=["GET"])
-@login_required
-def get_users():
-    current_user = User.query.get(session["user_id"])
-    if current_user.role != "admin":
-        return jsonify({"error": "Forbidden. Admins only."}), 403
+# @app.route("/users", methods=["GET"])
+# @login_required
+# def get_users():
+#     current_user = User.query.get(session["user_id"])
+#     if current_user.role != "admin":
+#         return jsonify({"error": "Forbidden. Admins only."}), 403
 
-    users = User.query.all()
-    user_list = []
-    for u in users:
-        user_info = {
-            "id": u.id,
-            "username": u.username,
-            "role": u.role,
-        }
-        # ⚠️ include hash only for debugging (remove in production)
-        user_info["password_hash"] = u.password_hash  
-        user_list.append(user_info)
+#     users = User.query.all()
+#     user_list = []
+#     for u in users:
+#         user_info = {
+#             "id": u.id,
+#             "username": u.username,
+#             "role": u.role,
+#         }
+#         # ⚠️ include hash only for debugging (remove in production)
+#         user_info["password_hash"] = u.password_hash  
+#         user_list.append(user_info)
 
-    return jsonify(user_list), 200
+#     return jsonify(user_list), 200
 
 @app.route('/create_user', methods=["POST"])
 @login_required
 def create_user():
+    # current_user= db.session.get(User, session.get("user_id"))
+    # if current_user.role !="admin":
     current_user = User.query.get(session["user_id"])
     if current_user.role != "admin":
         return jsonify({"error": "Forbidden. Admins only."}), 403
     
     data = request.get_json()
     username = data.get("username")
-    password = data.get("password")   # plain text password
+    password = data.get("password")
     role = data.get("role", "user")
-
-    if not username or not password or not role:
-        return jsonify({"message": "Missing data"}), 400
-
+    password_hash = generate_password_hash(password)
+    if not username or not password_hash or not role:
+        return jsonify({"message":"Missing data"}), 400
     if User.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
 
@@ -86,6 +93,50 @@ def create_user():
         return jsonify({"message": str(e)}), 400
 
     return jsonify({"message": "User created successfully"}), 201
+
+@app.route('/users', methods=["GET"])
+@login_required
+def get_users():
+    current_user= db.session.get(User, session.get("user_id"))
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    users=User.query.all()
+    json_users= list(map(lambda u: u.to_json(), users))
+    return jsonify({"users": json_users}),200
+
+@app.route('/delete_user/<int:user_id>', methods=["DELETE"])
+@login_required
+def delete_user(user_id):
+    current_user= db.session.get(User, session.get("user_id"))  
+    if current_user.role !="admin":
+        return jsonify
+    ({"error": "Forbidden. Admins only."}), 403
+    user= db.session.get(User, user_id)
+    if not user:
+        return jsonify({"message": "User not found"}),404
+    if user.id==current_user.id:
+        return jsonify({"message": "You cannot delete yourself"}),400
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted successfully"}), 200
+
+@app.route('/update_user/<int:user_id>', methods=["PATCH"])
+@login_required
+def update_user(user_id):
+    current_user= db.session.get(User, session.get("user_id"))
+    if current_user.role !="admin":
+        return jsonify({"error": "Forbidden. Admins only."}), 403
+    user= db.session.get(User, user_id)
+    if not user:
+        return jsonify({"message": "User not found"}),404
+    data= request.json
+    user.username=data.get("username", user.username)
+    user.password_hash=data.get("passwordHash", user.password_hash)
+    user.role=data.get("role", user.role)
+    db.session.commit()
+    return jsonify({"message": "User updated successfully"}), 200
+
+
 
 #API route for user login
 
@@ -149,7 +200,7 @@ def add_patient():
 @app.route("/update_patient/<int:patient_id>", methods=["PATCH"])
 @login_required
 def update_patient(patient_id):
-    patient= Patient.query.get(patient_id)
+    patient= db.session.get(Patient, patient_id)
 
     if not patient:
         return jsonify({"message": "Patient not found"}),404
@@ -164,7 +215,7 @@ def update_patient(patient_id):
 @app.route("/delete_patient/<int:patient_id>", methods=["DELETE"])
 @login_required
 def delete_patient(patient_id):
-    patient= Patient.query.get(patient_id)
+    patient= db.session.get(Patient, patient_id)
 
     if not patient:
         return jsonify({"message": "Patient not found"}),404
@@ -201,7 +252,7 @@ def add_visit():
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
     
-    patient= Patient.query.get(patient_id)
+    patient= db.session.get(Patient, patient_id)
     if not patient:
         return jsonify({"message": "Patient not found"}), 404
     
@@ -217,7 +268,7 @@ def add_visit():
 @app.route("/update_visit/<int:visit_id>", methods=["PATCH"])
 @login_required
 def update_visit(visit_id):
-    visit= Visit.query.get(visit_id)
+    visit= db.session.get(Visit, visit_id)
 
     if not visit:
         return jsonify({"message": "Visit not found"}),404
@@ -238,7 +289,7 @@ def update_visit(visit_id):
 @app.route("/delete_visit/<int:visit_id>", methods=["DELETE"])
 @login_required
 def delete_visit(visit_id):
-    visit= Visit.query.get(visit_id)
+    visit= db.session.get(Visit, visit_id)
 
     if not visit:
         return jsonify({"message": "Visit not found"}),404
@@ -274,7 +325,7 @@ def add_prescription():
         end_date=datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-    patient= Patient.query.get(patient_id)
+    patient= db.session.get(Patient, patient_id)
     if not patient:
         return jsonify({"message": "Patient not found"}), 404
     new_prescription=Prescription(patient_id=patient_id, medication_name=medication_name, dosage=dosage, start_date=start_date, end_date=end_date)
@@ -289,7 +340,7 @@ def add_prescription():
 @app.route("/update_prescription/<int:prescription_id>", methods=["PATCH"])
 @login_required
 def update_prescription(prescription_id):
-    prescription= Prescription.query.get(prescription_id)
+    prescription= db.session.get(Prescription, prescription_id)
 
     if not prescription:
         return jsonify({"message": "Prescription not found"}),404
@@ -313,7 +364,7 @@ def update_prescription(prescription_id):
 @app.route("/delete_prescription/<int:prescription_id>", methods=["DELETE"])
 @login_required
 def delete_prescription(prescription_id):
-    prescription= Prescription.query.get(prescription_id)
+    prescription= db.session.get(Prescription, prescription_id)
 
     if not prescription:
         return jsonify({"message": "Prescription not found"}),404

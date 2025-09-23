@@ -17,10 +17,12 @@ jobs:
         run: |
           echo "Running Installing Dependencies"
           npm install
+          working-directory: ./frontend
       - name: Run Lint
         run: |
           echo "Running Lint"
           npm run lint
+          working-directory: ./frontend
         env:
           CI: true
 

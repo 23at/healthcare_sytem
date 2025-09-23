@@ -67,7 +67,6 @@ const LoginPage = () => {
 };
 
 
-"use client";
 
 
 

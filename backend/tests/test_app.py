@@ -1,7 +1,7 @@
 import pytest
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from main import app, db
+from backend.app import app, db
 from unittest.mock import patch
 from datetime import datetime
 

@@ -30,5 +30,14 @@ def delete_user(username):
         else:
             print(f"User '{username}' not found.")
 
-if __name__ == "__main__":
-    init_db()  
+if __name__ == "__main__":  
+    with app.app_context():
+        if not User.query.filter_by(username="asmita_dev").first():
+            default_user = User(
+            username="asmita_dev",
+            password_hash=generate_password_hash("124test"),
+            role="admin"
+            )
+            db.session.add(default_user)
+            db.session.commit()
+            print("Database initialized and default admin user created.")

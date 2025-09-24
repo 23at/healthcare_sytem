@@ -373,6 +373,9 @@ def delete_prescription(prescription_id):
     db.session.commit()
     return jsonify({"message": "Prescription deleted successfully"}), 200
 
+@app.route("/")
+def index():
+    return "Backend is running!"
 
 
 if __name__ == "__main__":

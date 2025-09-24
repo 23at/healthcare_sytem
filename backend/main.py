@@ -389,4 +389,4 @@ if __name__ == "__main__":
             print("Database initialized and default admin user created.")
         else:
             print("Database already initialized.")
-    app.run(debug=True,port=8080)
+    app.run(debug=True, host="0.0.0.0", port=8080)

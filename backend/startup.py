@@ -2,7 +2,7 @@ import sqlite3
 from werkzeug.security import generate_password_hash
 from config import db
 from models import User
-from main import app
+from backend.app import app
 
 def init_db():
     with app.app_context():

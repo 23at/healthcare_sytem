@@ -1,20 +1,16 @@
-# Use Node.js LTS image
-FROM node:18-alpine
+# frontend/Dockerfile
+FROM node:20
 
-# Set working directory inside container
 WORKDIR /app
 
-# Copy only package.json and package-lock.json first (better caching)
-COPY package*.json ./
-
 # Install dependencies
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm install --build-from-source
 
-# Copy the rest of the code
+# Copy source
 COPY . .
 
-# Expose Next.js default port
-EXPOSE 3000
+# Force webpack (disable Turbopack)
+CMD ["npm", "run", "dev",]
 
-# Run in dev mode (good for local development with hot reload)
-CMD ["npm", "run", "dev"]
+EXPOSE 3000

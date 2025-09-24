@@ -38,29 +38,6 @@ def check_session():
         }), 200
     return jsonify({"logged_in": False}), 401
 
-
-#admins user creation 
-# @app.route("/users", methods=["GET"])
-# @login_required
-# def get_users():
-#     current_user = User.query.get(session["user_id"])
-#     if current_user.role != "admin":
-#         return jsonify({"error": "Forbidden. Admins only."}), 403
-
-#     users = User.query.all()
-#     user_list = []
-#     for u in users:
-#         user_info = {
-#             "id": u.id,
-#             "username": u.username,
-#             "role": u.role,
-#         }
-#         # ⚠️ include hash only for debugging (remove in production)
-#         user_info["password_hash"] = u.password_hash  
-#         user_list.append(user_info)
-
-#     return jsonify(user_list), 200
-
 @app.route('/create_user', methods=["POST"])
 @login_required
 def create_user():
@@ -164,6 +141,22 @@ def logout():
     
 
 
+@app.route("/patients/<int:patient_id>", methods=["GET"])
+@login_required
+def get_patient(patient_id):
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found"}), 404
+
+    # Fetch related visits and prescriptions
+    visits = Visit.query.filter_by(patient_id=patient_id).all()
+    prescriptions = Prescription.query.filter_by(patient_id=patient_id).all()
+
+    return jsonify({
+        "patient": patient.to_json(),
+        "visits": [v.to_json() for v in visits],
+        "prescriptions": [p.to_json() for p in prescriptions],
+    }), 200
 
 
 #API routes for paitent info

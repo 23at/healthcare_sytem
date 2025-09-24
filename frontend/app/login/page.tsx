@@ -30,8 +30,12 @@ const LoginPage = () => {
     try {
       await api.post("/login", { username, password });
       router.push("/patients");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "login failed");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("login failed");
+      }
     }
   };
   if (loading) {
@@ -65,9 +69,5 @@ const LoginPage = () => {
     </div>
   );
 };
-
-
-
-
 
 export default LoginPage;

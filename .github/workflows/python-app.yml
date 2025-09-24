@@ -40,6 +40,11 @@ jobs:
        pip install -r backend/requirements.txt
        python backend/main.py &
        sleep 5  # give it time to start
+    - name: Run backend unit test with pytest
+      working-directory: backend
+      run: |
+        pytest -v --junitxml=results/pytest-results.xml
+
 
     - name: Install Newman
       run: npm install -g newman

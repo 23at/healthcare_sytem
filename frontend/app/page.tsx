@@ -3,46 +3,44 @@ import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import Link from "next/link";
 import api from "@/api/api";
+import useAuth from "@/hooks/useAuth";
 
 export default function Home() {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const user = useAuth(); //  gives you session + role
   const [patientsCount, setPatientsCount] = useState(0);
   const [visitsCount, setVisitsCount] = useState(0);
   const [prescriptionsCount, setPrescriptionsCount] = useState(0);
 
   const fetchSummary = async () => {
     try {
-      // ✅ 1. Check session / role
-      const sessionRes = await api.get("/check_session", {
-        withCredentials: true,
-      });
-      setUserRole(sessionRes.data?.user?.role ?? "Guest");
+      // fire all 3 at once
+      const [patientsRes, visitsRes, prescriptionsRes] = await Promise.all([
+        api.get("/patients", { withCredentials: true }),
+        api.get("/visits", { withCredentials: true }),
+        api.get("/prescriptions", { withCredentials: true }),
+      ]);
 
-      // ✅ 2. Fetch patients
-      const patientsRes = await api.get("/patients", { withCredentials: true });
       setPatientsCount(patientsRes.data?.patients?.length ?? 0);
-
-      // ✅ 3. Fetch visits
-      const visitsRes = await api.get("/visits", { withCredentials: true });
       setVisitsCount(visitsRes.data?.visits?.length ?? 0);
-
-      // ✅ 4. Fetch prescriptions
-      const prescriptionsRes = await api.get("/prescriptions", {
-        withCredentials: true,
-      });
       setPrescriptionsCount(prescriptionsRes.data?.prescriptions?.length ?? 0);
-    } catch (err) {
-      console.error("Failed to fetch dashboard summary", err);
+    } catch (err: unknown) {
+      console.error("Failed to fetch dashboard summary:", err);
     }
   };
 
   useEffect(() => {
-    fetchSummary();
-  }, []);
+    if (user) {
+      fetchSummary();
+    }
+  }, [user]);
+
+  if (!user) {
+    return <p className="p-6 text-center">Loading...</p>;
+  }
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-4">Welcome, {userRole}</h1>
+      <h1 className="text-2xl font-bold mb-4">Welcome, {user.role}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-4 rounded shadow text-center">

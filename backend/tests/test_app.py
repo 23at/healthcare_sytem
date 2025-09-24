@@ -5,7 +5,6 @@ from main import app, db
 from unittest.mock import patch
 from datetime import datetime
 
-
 from werkzeug.security import generate_password_hash
 from models import Patient, Visit, Prescription, User
 

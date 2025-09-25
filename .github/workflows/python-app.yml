@@ -41,10 +41,9 @@ jobs:
        python backend/main.py &
        sleep 5  # give it time to start
     - name: Run backend unit test with pytest
-      working-directory: backend
+      working-directory: ./healthcare_system
       run: |
-        pytest -v --junitxml=results/pytest-results.xml
-
+        PYTHONPATH=. pytest --junitxml=backend/results/pytest-results.xml
 
     - name: Install Newman
       run: npm install -g newman

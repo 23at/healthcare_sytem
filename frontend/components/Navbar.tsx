@@ -4,8 +4,6 @@ import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   // In real scenario, check user role here
-  //   const userRole = "Doctor"; // or 'Admin'
-
   const router = useRouter();
   const handleLogout = async () => {
     try {

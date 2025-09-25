@@ -18,7 +18,7 @@ export default function useAuth() {
     const checkAuth = async () => {
       try {
         const res = await api.get("/check_session");
-        setUser(res.data.user);
+        setUser(res.data.user ?? null);
       } catch {
         router.push("/login");
       }

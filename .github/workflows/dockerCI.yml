@@ -1,11 +1,11 @@
-
 name: Docker Compose
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "test-workflow"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -17,38 +17,36 @@ jobs:
         options: --privileged
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
-    - name: Install docker-compose
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+      - name: Install docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
-    - name: Build and run services
-      run: |
-        docker-compose -f docker-compose.yml up -d --build
-    
-    - name: Check running containers
-      run: docker ps
-      
-    - name: Wait for flask_app to be ready
-      run: |
-        until docker inspect -f '{{.State.Running}}' flask_app | grep true; do
-        echo "Waiting for flask_app to start..."
-        sleep 2
-        done
-        echo "flask_app is running."
+      - name: Build and run services
+        run: |
+          docker-compose -f docker-compose.yml up --build
 
+      - name: Check running containers
+        run: docker ps
 
-    - name: Run backend tests
-      run: docker exec flask_app pytest
+      - name: Wait for flask_app to be ready
+        run: |
+          until docker inspect -f '{{.State.Running}}' flask_app | grep true; do
+          echo "Waiting for flask_app to start..."
+          sleep 2
+          done
+          echo "flask_app is running."
 
-    - name: Run frontend tests
-      run: docker exec frontend npm run test
+      - name: Run backend tests
+        run: docker exec flask_app pytest
 
-    - name: Tear down
-      run: docker-compose down
+      - name: Run frontend tests
+        run: docker exec frontend npm run test
 
+      - name: Tear down
+        run: docker-compose down

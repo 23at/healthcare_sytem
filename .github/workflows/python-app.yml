@@ -59,8 +59,3 @@ jobs:
       - name: Run backend unit test with pytest
         run: |
           PYTHONPATH=. pytest
-      - name: Start Postgres for Backend Tests
-        run: |
-          docker run -d --name test-db -e POSTGRES_USER=healthcare_user -e POSTGRES_PASSWORD=securepassword -e POSTGRES_DB=healthcare_db -p 5432:5432 postgres:15
-          export DATABASE_URL=postgresql+psycopg2://healthcare_user:securepassword@localhost:5432/healthcare_db
-          docker run --rm -e DATABASE_URL=$DATABASE_URL healthcare-backend pytest

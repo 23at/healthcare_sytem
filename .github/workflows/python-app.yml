@@ -38,14 +38,9 @@ jobs:
     - name: Start Flask server
       run: |
        pip install -r backend/requirements.txt
-       python backend/main.py &
+       python backend/app.py &
        sleep 5  # give it time to start
-    - name: Run backend unit test with pytest
-      working-directory: backend
-      run: |
-        pytest -v --junitxml=results/pytest-results.xml
-
-
+   
     - name: Install Newman
       run: npm install -g newman
 
@@ -62,5 +57,10 @@ jobs:
       with:
         name: newman-results
         path: results/newman-results.xml
+        
+    - name: Run backend unit test with pytest
+      run: |
+        PYTHONPATH=. pytest
+
         
     

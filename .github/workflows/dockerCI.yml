@@ -1,52 +1,56 @@
-name: Docker Compose
+# name: Docker Compose CI
 
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-  # workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      docker:
-        image: docker:20.10.16
-        options: --privileged
-
     steps:
+      # 1. Checkout the repo
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
+      # 2. Set up Docker
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
+      # 3. Install docker-compose
       - name: Install docker-compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose
+          sudo apt-get install -y docker-compose curl
 
-      - name: Build and run services
+      # 4. Build and start containers
+      - name: Build and start services
+        run: docker-compose -f docker-compose.yml up --build -d
+
+      # 5. Wait for Flask app to be ready
+      - name: Wait for Flask app
         run: |
-          docker-compose -f docker-compose.yml up --build
-
-      - name: Check running containers
-        run: docker ps
-
-      - name: Wait for flask_app to be ready
-        run: |
-          until docker inspect -f '{{.State.Running}}' flask_app | grep true; do
-          echo "Waiting for flask_app to start..."
-          sleep 2
+          echo "Waiting for Flask app..."
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:5000/health; then
+              echo "Flask app is ready!"
+              break
+            else
+              echo "Waiting..."
+              sleep 2
+            fi
           done
-          echo "flask_app is running."
 
+      # 6. Run backend tests
       - name: Run backend tests
         run: docker exec flask_app pytest
 
+      # 7. Run frontend tests
       - name: Run frontend tests
         run: docker exec frontend npm run test
 
+      # 8. Tear down
       - name: Tear down
-        run: docker-compose down
+        run: docker-compose down --volumes --remove-orphans

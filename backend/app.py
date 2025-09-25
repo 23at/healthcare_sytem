@@ -1,19 +1,9 @@
 from flask import request, jsonify, session
 from config import app, db
-from models import Patient
-from models import Visit
-from models import Prescription
-from models import User
+from models import Patient, Visit, Prescription, User
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-
-with app.app_context():
-    db.create_all()
-    if not User.query.filter_by(username="admin").first():
-        admin = User(username="admin", password_hash=generate_password_hash("adminpass"), role="admin")
-        db.session.add(admin)
-        db.session.commit()
 
 #decorator to protect routes that require authentication
 def login_required(f):

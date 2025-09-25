@@ -5,62 +5,62 @@ name: Python application
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
-    - name: Start Flask server
-      run: |
-       pip install -r backend/requirements.txt
-       python backend/app.py &
-       sleep 5  # give it time to start
-   
-    - name: Install Newman
-      run: npm install -g newman
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run Postman API test
-      run: |
-        mkdir -p results
-        newman run backend/tests/API_route_testing.postman_collection.json \
-          --reporters cli,junit \
-          --reporter-junit-export results/newman-results.xml
+      - name: Start Flask server
+        run: |
+          pip install -r backend/requirements.txt
+          python backend/app.py &
+          sleep 5  # give it time to start
 
-  
-    - name: Upload Newman test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: newman-results
-        path: results/newman-results.xml
-        
-    - name: Run backend unit test with pytest
-      run: |
-        PYTHONPATH=. pytest
+      - name: Install Newman
+        run: npm install -g newman
 
-        
-    
+      - name: Run Postman API test
+        run: |
+          mkdir -p results
+          newman run backend/tests/API_route_testing.postman_collection.json \
+            --reporters cli,junit \
+            --reporter-junit-export results/newman-results.xml
+
+      - name: Upload Newman test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-results
+          path: results/newman-results.xml
+
+      - name: Run backend unit test with pytest
+        run: |
+          PYTHONPATH=. pytest
+      - name: Start Postgres for Backend Tests
+        run: |
+          docker run -d --name test-db -e POSTGRES_USER=healthcare_user -e POSTGRES_PASSWORD=securepassword -e POSTGRES_DB=healthcare_db -p 5432:5432 postgres:15
+          export DATABASE_URL=postgresql+psycopg2://healthcare_user:securepassword@localhost:5432/healthcare_db
+          docker run --rm -e DATABASE_URL=$DATABASE_URL healthcare-backend pytest

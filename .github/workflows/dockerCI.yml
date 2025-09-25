@@ -30,7 +30,10 @@ jobs:
     - name: Build and run services
       run: |
         docker-compose -f docker-compose.yml up -d --build
-
+    
+    - name: Check running containers
+      run: docker ps
+      
     - name: Wait for services to be ready
       run: sleep 10
 

@@ -43,7 +43,7 @@ jobs:
     - name: Run backend unit test with pytest
       working-directory: backend
       run: |
-        PYTHONPATH=. pytest --junitxml=backend/results/pytest-results.xml
+        PYTHONPATH=. pytest backend/tests --junitxml=backend/results/pytest-results.xml
 
     - name: Install Newman
       run: npm install -g newman

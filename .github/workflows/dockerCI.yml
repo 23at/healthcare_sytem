@@ -34,8 +34,14 @@ jobs:
     - name: Check running containers
       run: docker ps
       
-    - name: Wait for services to be ready
-      run: sleep 10
+    - name: Wait for flask_app to be ready
+      run: |
+        until docker inspect -f '{{.State.Running}}' flask_app | grep true; do
+        echo "Waiting for flask_app to start..."
+        sleep 2
+        done
+        echo "flask_app is running."
+
 
     - name: Run backend tests
       run: docker exec flask_app pytest

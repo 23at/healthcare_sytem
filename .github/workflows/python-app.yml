@@ -41,7 +41,7 @@ jobs:
        python backend/main.py &
        sleep 5  # give it time to start
     - name: Run backend unit test with pytest
-      working-directory: ./healthcare_system
+      working-directory: ./healthcare_sytem
       run: |
         PYTHONPATH=. pytest --junitxml=backend/results/pytest-results.xml
 

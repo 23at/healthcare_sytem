@@ -43,7 +43,7 @@ jobs:
     - name: Run backend unit test with pytest
    
       run: |
-        pytest --maxfail=1 --disable-warnings --tb=short
+        PYTHONPATH=. pytest
 
     - name: Install Newman
       run: npm install -g newman

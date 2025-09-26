@@ -11,6 +11,6 @@ RUN npm install --build-from-source
 COPY . .
 
 # Force webpack (disable Turbopack)
-CMD ["npm", "run", "dev",]
+CMD ["npm", "start"]
 
 EXPOSE 3000

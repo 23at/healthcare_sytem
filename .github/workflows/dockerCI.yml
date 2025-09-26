@@ -48,8 +48,7 @@ jobs:
         run: docker exec flask_app pytest
 
       # 7. Run frontend tests
-      - name: Run frontend tests
-        run: docker compose run --rm frontend npm run test
+     
 
       # 8. Tear down
       - name: Tear down

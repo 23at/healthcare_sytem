@@ -3,7 +3,7 @@ services:
     name: healthcare-backend
     env: docker
     plan: free
-    repo: https://github.com/23at/healthcare_sytem
+    repo: https://github.com/cingdim/healthcare_sytem
     branch: main
     dockerfilePath: ./Dockerfile
     buildCommand: ""

@@ -49,7 +49,26 @@ jobs:
 
       # 7. Run frontend tests
      
+      - name: Set version tag
+        run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      # 8. Tear down
+      - name: Save backend image
+        run: docker save healthcare_sytem_backend:v1.0.0 -o backend.tar
+
+      - name: Save frontend image
+        run: docker save healthcare_sytem_frontend:v1.0.0 -o frontend.tar
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-image
+          path: backend.tar
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-image
+          path: frontend.tar
+      
       - name: Tear down
         run: docker-compose down --volumes --remove-orphans

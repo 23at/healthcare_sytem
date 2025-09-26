@@ -25,14 +25,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose curl
           
-      - name: List Docker images
-        run: docker images
-
-   
       # 4. Build and start containers
       - name: Build and start services
         run: docker-compose -f docker-compose.yml up --build -d
 
+      - name: List Docker images
+        run: docker images
+        
       # 5. Wait for Flask app to be ready
       - name: Wait for Flask app
         run: |

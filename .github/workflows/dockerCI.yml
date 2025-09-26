@@ -48,6 +48,18 @@ jobs:
         run: docker exec flask_app pytest
 
       # 7. Run frontend tests
+      - name: Wait for Nodejs app
+        run: |
+          echo "Waiting for Next.js app to be ready..."
+          for i in {1..20}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+          echo "Next.js app is up!"
+          break
+          fi
+          echo "Waiting... ($i)"
+          sleep 5
+          done
+        
       - name: Run frontend tests
         run: docker exec nextjs_app npm run test
 

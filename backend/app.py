@@ -4,6 +4,7 @@ from models import Patient, Visit, Prescription, User
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+import os
 
 #decorator to protect routes that require authentication
 def login_required(f):
@@ -375,4 +376,5 @@ if __name__ == "__main__":
             print("Database initialized and default admin user created.")
         else:
             print("Database already initialized.")
-    app.run(debug=True, host="0.0.0.0", port=8080)
+    port= int(os.environ.get("PORT", 8080))
+    app.run(debug=True, host="0.0.0.0", port=port)

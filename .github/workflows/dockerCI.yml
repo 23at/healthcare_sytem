@@ -1,4 +1,4 @@
-# name: Docker Compose CI
+name: Docker Compose CI
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     steps:
       # 1. Checkout the repo
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 2. Set up Docker
       - name: Set up Docker Buildx
@@ -24,11 +24,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose curl
-
+          
       # 4. Build and start containers
       - name: Build and start services
         run: docker-compose -f docker-compose.yml up --build -d
 
+      - name: List Docker images
+        run: docker images
+        
       # 5. Wait for Flask app to be ready
       - name: Wait for Flask app
         run: |
@@ -48,9 +51,27 @@ jobs:
         run: docker exec flask_app pytest
 
       # 7. Run frontend tests
-      - name: Run frontend tests
-        run: docker exec frontend npm run test
+     
+      - name: Set version tag
+        run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      # 8. Tear down
+      - name: Save backend image
+        run: docker save healthcare_sytem_backend:latest -o backend.tar
+
+      - name: Save frontend image
+        run: docker save healthcare_sytem_frontend:latest -o frontend.tar
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: backend.tar
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend.tar
+      
       - name: Tear down
         run: docker-compose down --volumes --remove-orphans

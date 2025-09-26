@@ -56,10 +56,10 @@ jobs:
         run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Save backend image
-        run: docker save healthcare_sytem_backend:v1.0.0 -o backend.tar
+        run: docker save healthcare_sytem_backend:latest -o backend.tar
 
       - name: Save frontend image
-        run: docker save healthcare_sytem_frontend:v1.0.0 -o frontend.tar
+        run: docker save healthcare_sytem_frontend:latest -o frontend.tar
 
       - name: Upload backend artifact
         uses: actions/upload-artifact@v4

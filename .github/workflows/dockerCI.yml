@@ -25,10 +25,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose curl
           
-      - name: Build Docker image
-        run: docker build -t healthcare_sytem-backend:latest .
-      - name: Tag backend image
-        run: docker tag healthcare_sytem-backend flask_app:v1.0.0
+      - name: List Docker images
+        run: docker images
+
    
       # 4. Build and start containers
       - name: Build and start services

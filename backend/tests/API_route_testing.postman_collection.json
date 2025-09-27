@@ -5,6 +5,22 @@
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "48472021"
 	},
+	"event": [
+     {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (pm.environment.get(\"sessionCookie\")) {",
+          "    pm.request.headers.add({",
+          "        key: \"Cookie\",",
+          "        value: pm.environment.get(\"sessionCookie\")",
+          "    });",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
 	"item": [
 		{
 			"name": "login_request",
@@ -21,7 +37,12 @@
 							"    const jsonData = pm.response.json();\r",
 							"    pm.expect(jsonData).to.have.property(\"message\");\r",
 							"});\r",
-							""
+							"",
+      						"// Save session cookie",
+      						"var cookie = pm.response.headers.get('Set-Cookie');",
+      						"if (cookie) {",
+      						"    pm.environment.set('sessionCookie', cookie);",
+      						"}"
 						],
 						"type": "text/javascript",
 						"packages": {}

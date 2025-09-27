@@ -4,3 +4,4 @@ flask_cors
 werkzeug
 pytest
 pytest-mock
+gunicorn

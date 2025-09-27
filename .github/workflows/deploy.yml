@@ -1,0 +1,63 @@
+name: Deploy to Render
+
+on:
+  workflow_run:
+    workflows: ["Backend Tests", "Frontend Tests"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Docker & docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose curl
+
+      # Build Docker images
+      - name: Build Docker images
+        run: docker-compose -f docker-compose.yml build
+
+      # Start containers for health check
+      - name: Start services temporarily
+        run: docker-compose -f docker-compose.yml up -d
+
+      # Health check
+      - name: Health check
+        run: |
+          echo "Checking backend health..."
+          if ! curl --silent --fail http://localhost:5000/health; then
+            echo "Health check failed!"
+            exit 1
+          fi
+
+      # Deploy only if health check passes
+      - name: Deploy to Render
+        run: |
+          echo "Deploying backend..."
+          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+               https://api.render.com/deploy/srv-backend-id
+
+          echo "Deploying frontend..."
+          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+               https://api.render.com/deploy/srv-frontend-id
+
+      # Rollback if deployment fails
+      - name: Rollback if deploy fails
+        if: failure()
+        run: |
+          echo "Deployment failed! Rolling back..."
+          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+               https://api.render.com/deploy/srv-backend-previous-version
+          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+               https://api.render.com/deploy/srv-frontend-previous-version
+
+      # Tear down Docker containers
+      - name: Tear down
+        run: docker-compose down --volumes --remove-orphans

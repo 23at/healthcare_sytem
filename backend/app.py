@@ -5,6 +5,9 @@ from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 import os
+import os
+
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
 
 #decorator to protect routes that require authentication
 def login_required(f):

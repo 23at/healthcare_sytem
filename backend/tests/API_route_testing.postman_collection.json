@@ -41,7 +41,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{API_URL}}/login?Content-Type=application/json",
+					"raw": "{{API_URL}}/login",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -53,7 +53,7 @@
 					"path": [
 						"login"
 					],
-					"query": [
+					"header": [
 						{
 							"key": "Content-Type",
 							"value": "application/json"

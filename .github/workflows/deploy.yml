@@ -31,7 +31,7 @@ jobs:
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
       - name: Run frontend tests
-        run: docker exec frontend_app npm test --prefix ./frontend
+        run: docker exec nextjs_app npm test --prefix ./frontend
         env:
           CI: true
 

@@ -65,7 +65,7 @@ jobs:
       # 8. Tag and push backend image
       - name: Push backend image
         run: |
-          docker tag healthcare_sytem_backend:latest 23at/cicd:latest
+          docker tag healthcare_sytem_backend:latest 23at/cicd-latest
           docker push 23at/cicd:backend-latest
       - name: Build frontend image
         run: docker build -t healthcare_sytem_frontend:latest ./frontend
@@ -73,7 +73,7 @@ jobs:
       # 9. Tag and push frontend image
       - name: Push frontend image
         run: |
-          docker tag healthcare_sytem_frontend:latest 23at/cicd:latest
+          docker tag healthcare_sytem_frontend:latest 23at/cicd-latest
           docker push 23at/cicd:backend-latest
 
       # 10. Deploy to Render

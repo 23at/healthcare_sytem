@@ -142,7 +142,6 @@ describe("PrescriptionsPage", () => {
   it("calls api.delete when deleting a prescription", async () => {
     mockedApi.delete.mockResolvedValueOnce({});
     render(<PrescriptionsPage />);
-    const user = userEvent.setup();
 
     await screen.findByText(/Medication: Med A/i);
 

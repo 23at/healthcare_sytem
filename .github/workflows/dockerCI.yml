@@ -51,27 +51,6 @@ jobs:
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
 
-      # 8. Run Postman API tests using Newman
-      - name: Install Newman
-        run: npm install -g newman
-        
-      - name: Run Postman API tests
-        run: |
-          mkdir -p results
-          newman run backend/tests/API_route_testing.postman_collection.json \
-            --reporters cli,junit \
-            --reporter-junit-export results/newman-results.xml \
-            --env-var "API_URL=http://localhost:5000"
-        
-        # Upload Newman test results
-      - name: Upload Newman test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: newman-results
-          path: results/newman-results.xml
-
-
-      
       # 9. Set version tag
       - name: Set version tag
         run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV

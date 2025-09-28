@@ -1,63 +1,109 @@
-name: Deploy to Render
+name: CI/CD with Docker & Render
 
 on:
-  workflow_run:
-    workflows: ["Docker Compose CI", "NextJS CI"]
-    types:
-      - completed
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-  deploy:
+  build-test-deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    env:
+      BACKEND_IMAGE: 23at/healthcare_backend
+      FRONTEND_IMAGE: 23at/healthcare_frontend
 
     steps:
-      - name: Checkout repo
+      # 1. Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Docker & docker-compose
+      # 2. Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 3. Install docker-compose
+      - name: Install docker-compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose curl
 
-      # Build Docker images
-      - name: Build Docker images
-        run: docker-compose -f docker-compose.yml build
+      # 4. Build and start services
+      - name: Build & start services
+        run: docker-compose -f docker-compose.yml up --build -d
 
-      # Start containers for health check
-      - name: Start services temporarily
-        run: docker-compose -f docker-compose.yml up -d
-
-      # Health check
-      - name: Health check
+      # 5. Wait for backend to be ready
+      - name: Wait for Flask backend
         run: |
-          echo "Checking backend health..."
-          if ! curl --silent --fail http://localhost:8080/health; then
-            echo "Health check failed!"
+          echo "Waiting for Flask backend..."
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:8080/health; then
+              echo "Backend is ready!"
+              break
+            else
+              echo "Waiting..."
+              sleep 2
+            fi
+          done
+
+      # 6. Run backend tests
+      - name: Run backend tests
+        run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+
+      # 7. Log in to DockerHub
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: 23at
+          password: dckr_pat_ZwIWQ1jJPg94Mjj-McBbtb96bKk
+
+      # 8. Tag and push backend image
+      - name: Push backend image
+        run: |
+          docker tag healthcare_sytem_backend:latest $BACKEND_IMAGE:${{ github.sha }}
+          docker push $BACKEND_IMAGE:${{ github.sha }}
+
+      # 9. Tag and push frontend image
+      - name: Push frontend image
+        run: |
+          docker tag healthcare_sytem_frontend:latest $FRONTEND_IMAGE:${{ github.sha }}
+          docker push $FRONTEND_IMAGE:${{ github.sha }}
+
+      # 10. Deploy to Render
+      - name: Deploy backend to Render
+        id: deploy
+        run: |
+          RESPONSE=$(curl -s -X POST "https://api.render.com/v1/services/srv-d3bieg37mgec739o58jg/deploys" \
+            -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
+            -H "Accept: application/json" \
+            -d '{}')
+          echo "deploy_response=$RESPONSE" >> $GITHUB_ENV
+          DEPLOY_ID=$(echo $RESPONSE | jq -r '.id')
+          echo "deploy_id=$DEPLOY_ID"
+          if [ "$DEPLOY_ID" == "null" ]; then
+            echo "Render deployment failed!"
             exit 1
           fi
 
-      # Deploy only if health check passes
-      - name: Deploy to Render
+      # 11. Wait for Render deployment to finish
+      - name: Wait for Render deploy
         run: |
-          echo "Deploying backend..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-backend-id
-
-          echo "Deploying frontend..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-frontend-id
-
-      # Rollback if deployment fails
-      - name: Rollback if deploy fails
-        if: failure()
-        run: |
-          echo "Deployment failed! Rolling back..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-backend-previous-version
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-frontend-previous-version
-
-      # Tear down Docker containers
-      - name: Tear down
-        run: docker-compose down --volumes --remove-orphans
+          echo "Waiting for Render deploy..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
+                      -H "Accept: application/json" \
+                      "https://api.render.com/v1/deploys/$DEPLOY_ID" | jq -r '.status')
+            echo "Current status: $STATUS"
+            if [ "$STATUS" == "live" ]; then
+              echo "Deploy successful!"
+              exit 0
+            elif [ "$STATUS" == "failed" ]; then
+              echo "Deploy failed! Rolling back..."
+              curl -X POST "https://api.render.com/v1/services/srv-d3bieg37mgec739o58jg/deploys/$DEPLOY_ID/rollback" \
+                -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
+                -H "Accept: application/json"
+              exit 1
+            fi
+            sleep 10
+          done

@@ -30,8 +30,14 @@ jobs:
       # 5. Run backend tests inside backend container
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+      - name: Wait for frontend container
+        run: |
+          echo "Waiting for frontend container to start..."
+          until [ "$(docker inspect -f '{{.State.Running}}' nextjs_app)" == "true" ]; do
+            sleep 1
+          done
       - name: Run frontend tests
-        run: docker exec nextjs_app npm test --prefix ./frontend
+        run: docker exec nextjs_app npm test ./frontend
         env:
           CI: true
 

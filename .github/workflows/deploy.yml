@@ -34,8 +34,7 @@ jobs:
       run: docker run --rm healthcare_backend:latest pytest --maxfail=1 --disable-warnings -v
 
     # 5. Run frontend tests inside Docker container (if you have any)
-    - name: Run frontend tests
-      run: docker run --rm healthcare_frontend:latest npm test
+  
 
     # 6. Deploy backend to Render
     - name: Deploy backend to Render

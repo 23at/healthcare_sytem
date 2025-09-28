@@ -57,12 +57,18 @@ jobs:
         with:
           username: 23at
           password: dckr_pat_ZwIWQ1jJPg94Mjj-McBbtb96bKk
+      # Build backend image
+      - name: Build backend image
+        run: docker build -t healthcare_sytem_backend:latest ./backend
+
 
       # 8. Tag and push backend image
       - name: Push backend image
         run: |
           docker tag healthcare_sytem_backend:latest 23at/cicd:latest
           docker push 23at/cicd:backend-latest
+      - name: Build frontend image
+        run: docker build -t healthcare_sytem_frontend:latest ./frontend
 
       # 9. Tag and push frontend image
       - name: Push frontend image

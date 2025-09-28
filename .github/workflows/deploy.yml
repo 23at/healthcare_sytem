@@ -1,115 +1,78 @@
-name: CI/CD with Docker & Render
+name: CI/CD with Docker and Render
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
-
     env:
-      BACKEND_IMAGE: 23at/healthcare_backend
-      FRONTEND_IMAGE: 23at/healthcare_frontend
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
     steps:
-      # 1. Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # 1. Checkout code
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      # 2. Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+    # 2. Set up Docker
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      # 3. Install docker-compose
-      - name: Install docker-compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose curl
+    # 3. Build backend and frontend Docker images
+    - name: Build backend image
+      run: docker build -t healthcare_backend:latest ./backend
 
-      # 4. Build and start services
-      - name: Build & start services
-        run: docker-compose -f docker-compose.yml up --build -d
+    - name: Build frontend image
+      run: docker build -t healthcare_frontend:latest ./frontend
 
-      # 5. Wait for backend to be ready
-      - name: Wait for Flask backend
-        run: |
-          echo "Waiting for Flask backend..."
-          for i in {1..30}; do
-            if curl --silent --fail http://localhost:8080/health; then
-              echo "Backend is ready!"
-              break
-            else
-              echo "Waiting..."
-              sleep 2
-            fi
-          done
+    # 4. Run backend tests inside Docker container
+    - name: Run backend tests
+      run: docker run --rm healthcare_backend:latest pytest --maxfail=1 --disable-warnings -v
 
-      # 6. Run backend tests
-      - name: Run backend tests
-        run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+    # 5. Run frontend tests inside Docker container (if you have any)
+    - name: Run frontend tests
+      run: docker run --rm healthcare_frontend:latest npm test
 
-      # 7. Log in to DockerHub
-      - name: Docker login
-        uses: docker/login-action@v2
-        with:
-          username: 23at
-          password: dckr_pat_ZwIWQ1jJPg94Mjj-McBbtb96bKk
-      # Build backend image
-      - name: Build backend image
-        run: docker build -t healthcare_sytem_backend:latest ./backend
+    # 6. Deploy backend to Render
+    - name: Deploy backend to Render
+      id: backend-deploy
+      run: |
+        echo "Triggering Render deployment..."
+        DEPLOY_RESPONSE=$(curl -s -X POST \
+          -H "Accept: application/json" \
+          -H "Authorization: Bearer $RENDER_API_KEY" \
+          https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys)
+        echo "Deploy response: $DEPLOY_RESPONSE"
+        DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
+        echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
 
-
-      # 8. Tag and push backend image
-      - name: Push backend image
-        run: |
-          docker tag healthcare_sytem_backend:latest 23at/cicd-latest
-          docker push 23at/cicd:backend-latest
-      - name: Build frontend image
-        run: docker build -t healthcare_sytem_frontend:latest ./frontend
-
-      # 9. Tag and push frontend image
-      - name: Push frontend image
-        run: |
-          docker tag healthcare_sytem_frontend:latest 23at/cicd-latest
-          docker push 23at/cicd:backend-latest
-
-      # 10. Deploy to Render
-      - name: Deploy backend to Render
-        id: deploy
-        run: |
-          RESPONSE=$(curl -s -X POST "https://api.render.com/v1/services/srv-d3bieg37mgec739o58jg/deploys" \
-            -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
-            -H "Accept: application/json" \
-            -d '{}')
-          echo "deploy_response=$RESPONSE" >> $GITHUB_ENV
-          DEPLOY_ID=$(echo $RESPONSE | jq -r '.id')
-          echo "deploy_id=$DEPLOY_ID"
-          if [ "$DEPLOY_ID" == "null" ]; then
-            echo "Render deployment failed!"
+    # 7. Check deployment status (wait for completion)
+    - name: Wait for Render deployment
+      run: |
+        for i in {1..30}; do
+          STATUS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+            https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID | jq -r '.status')
+          echo "Current deployment status: $STATUS"
+          if [[ "$STATUS" == "success" ]]; then
+            echo "Deployment succeeded!"
+            exit 0
+          elif [[ "$STATUS" == "failed" ]]; then
+            echo "Deployment failed, rolling back..."
+            # 8. Rollback to previous successful deploy
+            LAST_SUCCESS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+              https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys | jq -r '.[] | select(.status=="success") | .id' | head -n1)
+            echo "Triggering rollback to deploy $LAST_SUCCESS"
+            curl -X POST -H "Authorization: Bearer $RENDER_API_KEY" \
+              https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$LAST_SUCCESS/retry
             exit 1
-          fi
-
-      # 11. Wait for Render deployment to finish
-      - name: Wait for Render deploy
-        run: |
-          echo "Waiting for Render deploy..."
-          for i in {1..30}; do
-            STATUS=$(curl -s -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
-                      -H "Accept: application/json" \
-                      "https://api.render.com/v1/deploys/$DEPLOY_ID" | jq -r '.status')
-            echo "Current status: $STATUS"
-            if [ "$STATUS" == "live" ]; then
-              echo "Deploy successful!"
-              exit 0
-            elif [ "$STATUS" == "failed" ]; then
-              echo "Deploy failed! Rolling back..."
-              curl -X POST "https://api.render.com/v1/services/srv-d3bieg37mgec739o58jg/deploys/$DEPLOY_ID/rollback" \
-                -H "Authorization: Bearer rnd_DBoE5z3fgOWZoo64IL1J8E5Ppox6" \
-                -H "Accept: application/json"
-              exit 1
-            fi
+          else
+            echo "Deployment in progress... waiting 10s"
             sleep 10
-          done
+          fi
+        done
+        echo "Deployment timed out!"
+        exit 1

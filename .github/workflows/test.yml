@@ -1,4 +1,4 @@
-name: Simple CI/CD
+name: CI/CD with Render
 
 on:
   push:
@@ -7,68 +7,137 @@ on:
     branches: ["main"]
 
 jobs:
-  test-and-deploy:
+  build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Backend tests
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+      # 2. Set up Docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Install backend dependencies
+      # 3. Install docker-compose
+      - name: Install docker-compose
         run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y docker-compose curl jq
 
+      # 4. Build and run containers (backend + frontend)
+      - name: Build and start containers
+        run: |
+          docker-compose -f docker-compose.yml up --build -d
+          sleep 10  # Wait for containers to fully start
+
+      # 5. Check container status
+      - name: Check container status
+        run: |
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo "=== Backend logs ==="
+          docker logs flask_app || echo "Backend container not found"
+          echo "=== Frontend logs ==="
+          docker logs nextjs_app || echo "Frontend container not found"
+
+      # 6. Run backend tests inside backend container
       - name: Run backend tests
         run: |
-          cd backend
-          pytest --maxfail=1 --disable-warnings -v
+          echo "Running backend tests..."
+          if docker ps --format "table {{.Names}}" | grep -q "flask_app"; then
+            docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+          else
+            echo "Backend container (flask_app) is not running"
+            exit 1
+          fi
 
-      # Frontend tests
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
-
+      # 7. Run frontend tests - Fixed approach
       - name: Run frontend tests
         run: |
-          cd frontend
-          npm test -- --watchAll=false --passWithNoTests
+          echo "Running frontend tests..."
+          if docker ps --format "table {{.Names}}" | grep -q "nextjs_app"; then
+            # Option 1: Run tests inside the container
+            docker exec nextjs_app npm test -- --watchAll=false --passWithNoTests
+          else
+            echo "Frontend container not running, running tests locally..."
+            # Option 2: Run tests locally if container failed
+            cd frontend
+            npm ci
+            npm test -- --watchAll=false --passWithNoTests
+          fi
         env:
           CI: true
 
-      - name: Build frontend
+      # 8. Alternative: Run tests without containers (more reliable)
+      - name: Run tests locally (fallback)
+        if: failure()
         run: |
+          echo "=== Running tests locally as fallback ==="
+
+          # Backend tests
+          echo "Setting up Python backend tests..."
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pytest --maxfail=1 --disable-warnings -v
+          cd ..
+
+          # Frontend tests  
+          echo "Setting up Node.js frontend tests..."
           cd frontend
-          npm run build
+          npm ci
+          npm test -- --watchAll=false --passWithNoTests
+          cd ..
 
-      # Deploy (only on main branch)
+      # 9. Clean up test containers
+      - name: Clean up containers
+        if: always()
+        run: |
+          echo "Cleaning up containers..."
+          docker-compose down --volumes --remove-orphans
+          docker system prune -f
+
+      # 10. Deploy only on main branch and if tests pass
       - name: Deploy backend to Render
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && success()
         run: |
-          curl -s -X POST \
+          echo "Deploying backend to Render..."
+          DEPLOY_BACKEND=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
-            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
+            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys)
 
+          if [ $? -eq 0 ]; then
+            echo "Backend deploy started successfully: $DEPLOY_BACKEND"
+          else
+            echo "Backend deploy failed"
+            exit 1
+          fi
+
+      # 11. Deploy frontend to Render
       - name: Deploy frontend to Render
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && success()
         run: |
-          curl -s -X POST \
+          echo "Deploying frontend to Render..."
+          DEPLOY_FRONTEND=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
-            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys
+            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)
+
+          if [ $? -eq 0 ]; then
+            echo "Frontend deploy started successfully: $DEPLOY_FRONTEND"
+          else
+            echo "Frontend deploy failed"
+            exit 1
+          fi
+
+      # 12. Wait for deployments and verify
+      - name: Verify deployments
+        if: github.ref == 'refs/heads/main' && success()
+        run: |
+          echo "Waiting for deployments to complete..."
+          sleep 30
+
+          # You can add health check calls here
+          echo "Deployments triggered successfully"

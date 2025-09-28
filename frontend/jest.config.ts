@@ -23,6 +23,7 @@ const config: Config = {
     "app/**/*.{js,jsx,ts,tsx}", // include all files in app
     "!app/**/*.d.ts", // ignore type definitions
     "!app/**/index.{js,ts,tsx}", // optional: ignore barrel files
+    "components/**/*.{js,jsx,ts,tsx}", // include all files in components"
   ],
   coverageReporters: ["text", "lcov"],
 };

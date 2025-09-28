@@ -54,7 +54,8 @@ export default function PatientsPage() {
     if (!confirm("Are you sure you want to delete this patient?")) return;
     try {
       await api.delete(`/delete_patient/${id}`);
-      fetchPatients();
+      // fetchPatients();
+      setPatients((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error(err);
     }

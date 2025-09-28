@@ -1,63 +1,58 @@
-name: Deploy to Render
+name: CI/CD with Render
 
 on:
-  workflow_run:
-    workflows: ["Docker Compose CI", "NextJS CI"]
-    types:
-      - completed
+  push:
+    branches: ["main"]
 
 jobs:
-  deploy:
+  build-test-deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Checkout repo
+      # 1. Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Docker & docker-compose
+      # 2. Set up Docker
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 3. Install docker-compose
+      - name: Install docker-compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose curl
+          sudo apt-get install -y docker-compose curl jq
 
-      # Build Docker images
-      - name: Build Docker images
-        run: docker-compose -f docker-compose.yml build
+      # 4. Build and run containers (backend + frontend)
+      - name: Build and start containers
+        run: docker-compose -f docker-compose.yml up --build -d
 
-      # Start containers for health check
-      - name: Start services temporarily
-        run: docker-compose -f docker-compose.yml up -d
+      # 5. Run backend tests inside backend container
+      - name: Run backend tests
+        run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+      - name: Run frontend tests
+        run: docker exec nextjs_app npm test --prefix ./frontend
+        env:
+          CI: true
 
-      # Health check
-      - name: Health check
-        run: |
-          echo "Checking backend health..."
-          if ! curl --silent --fail http://localhost:5000/health; then
-            echo "Health check failed!"
-            exit 1
-          fi
-
-      # Deploy only if health check passes
-      - name: Deploy to Render
-        run: |
-          echo "Deploying backend..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-backend-id
-
-          echo "Deploying frontend..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-frontend-id
-
-      # Rollback if deployment fails
-      - name: Rollback if deploy fails
-        if: failure()
-        run: |
-          echo "Deployment failed! Rolling back..."
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-backend-previous-version
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-               https://api.render.com/deploy/srv-frontend-previous-version
-
-      # Tear down Docker containers
-      - name: Tear down
+      # 6. Tear down test containers
+      - name: Tear down test containers
         run: docker-compose down --volumes --remove-orphans
+
+      # 7. Trigger Render deploy for backend
+      - name: Deploy backend to Render
+        run: |
+          DEPLOY_BACKEND=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys)
+          echo "Backend deploy started: $DEPLOY_BACKEND"
+
+      # 8. Trigger Render deploy for frontend
+      - name: Deploy frontend to Render
+        run: |
+          DEPLOY_FRONTEND=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)
+          echo "Frontend deploy started: $DEPLOY_FRONTEND"

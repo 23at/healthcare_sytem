@@ -30,6 +30,10 @@ jobs:
       # 5. Run backend tests inside backend container
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
+      - name: Run frontend tests
+        run: docker exec frontend_app npm test --prefix ./frontend
+        env:
+          CI: true
 
       # 6. Tear down test containers
       - name: Tear down test containers

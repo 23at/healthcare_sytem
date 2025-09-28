@@ -32,7 +32,7 @@ jobs:
       - name: Health check
         run: |
           echo "Checking backend health..."
-          if ! curl --silent --fail http://localhost:5000/health; then
+          if ! curl --silent --fail http://localhost:8080/health; then
             echo "Health check failed!"
             exit 1
           fi

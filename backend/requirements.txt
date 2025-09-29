@@ -5,3 +5,4 @@ werkzeug
 pytest
 pytest-mock
 gunicorn
+pytest-xdist

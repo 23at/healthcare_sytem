@@ -5,49 +5,47 @@ on:
     branches: ["main"]
 
 jobs:
-  build-test-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up Docker
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. Install docker-compose
       - name: Install docker-compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose curl jq
 
-      # 4. Build and run containers (backend + frontend)
+      # Build and run containers
       - name: Build and start containers
         run: docker-compose -f docker-compose.yml up --build -d
 
-      # 5. Run backend tests inside backend container
-      #  Run frontend unit tests
-      # - name: Run frontend unit tests
-      #   run: docker exec nextjs_app sh -c "CI=true npm run test"
+      # Run backend tests
+      - name: Run backend tests
+        run: docker exec backend_app pytest
 
-      # #  Run frontend integration tests
+      # Run frontend unit tests
+      - name: Run frontend unit tests
+        run: docker exec -e CI=true nextjs_app npm test
+
+      # Optionally run integration / E2E tests
       # - name: Run frontend integration tests
-      #   run: docker exec nextjs_app sh -c "CI=true npm run test:integration"
+      #   run: docker exec -e CI=true nextjs_app npm run test:integration
 
-      # #  Run frontend E2E tests
       # - name: Run frontend E2E tests
-      #   run: docker exec nextjs_app sh -c "CI=true npm run cypress:run"
+      #   run: docker exec -e CI=true nextjs_app npm run cypress:run
 
-      - name: Run frontend tests
-        run: docker exec -e CI=true nextjs_app npm test 
-
-      # 6. Tear down test containers
+      # Tear down
       - name: Tear down test containers
         run: docker-compose down --volumes --remove-orphans
 
-      # 7. Trigger Render deploy for backend
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy backend to Render
         run: |
           DEPLOY_BACKEND=$(curl -s -X POST \
@@ -56,10 +54,9 @@ jobs:
             https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys)
           echo "Backend deploy started: $DEPLOY_BACKEND"
 
-      # 8. Trigger Render deploy for frontend
       - name: Deploy frontend to Render
         run: |
-          DEPLOY_FRONTEND=$(curl -v -X POST \
+          DEPLOY_FRONTEND=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)

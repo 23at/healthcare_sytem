@@ -1,77 +1,73 @@
-name: Docker Compose CI
+name: CI/CD with Render
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
     branches: ["main"]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout the repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up Docker
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. Install docker-compose
       - name: Install docker-compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose curl
-          
-      # 4. Build and start containers
-      - name: Build and start services
+          sudo apt-get install -y docker-compose curl jq
+
+      # Build and run containers
+      - name: Build and start containers
         run: docker-compose -f docker-compose.yml up --build -d
 
-      - name: List Docker images
-        run: docker images
-        
-      # 5. Wait for Flask app to be ready
-      - name: Wait for Flask app
-        run: |
-          echo "Waiting for Flask app..."
-          for i in {1..30}; do
-            if curl --silent --fail http://localhost:5000/health; then
-              echo "Flask app is ready!"
-              break
-            else
-              echo "Waiting..."
-              sleep 2
-            fi
-          done
-
-      # 6. Run backend tests
+      # Run backend tests
       - name: Run backend tests
-        run: docker exec flask_app pytest
+        run: docker exec flask_app pytest -n 1
 
-      # 7. Run frontend tests
      
-      - name: Set version tag
-        run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Save backend image
-        run: docker save healthcare_sytem_backend:latest -o backend.tar
-
-      - name: Save frontend image
-        run: docker save healthcare_sytem_frontend:latest -o frontend.tar
-
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-image
-          path: backend.tar
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-image
-          path: frontend.tar
       
-      - name: Tear down
+      # Run frontend tests
+      #- name: Run frontend E2E tests
+       # run: |
+        #  docker run --rm \
+         #   --network host \
+          #  -v ${{ github.workspace }}/frontend:/e2e \
+           # -w /e2e \
+            #cypress/included:12.17.1 \
+            #cypress run --headless --browser chrome --config-file cypress.config.js
+   
+      
+      # Optionally run integration / E2E tests
+      # - name: Run frontend integration tests
+      #   run: docker exec -e CI=true nextjs_app npm run test:integration
+
+      # - name: Run frontend E2E tests
+      #   run: docker exec -e CI=true nextjs_app npm run cypress:run
+
+      # Tear down
+      - name: Tear down test containers
         run: docker-compose down --volumes --remove-orphans
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy backend to Render
+        run: |
+          DEPLOY_BACKEND=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys)
+          echo "Backend deploy started: $DEPLOY_BACKEND"
+
+      - name: Deploy frontend to Render
+        run: |
+          DEPLOY_FRONTEND=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)
+          echo "Frontend deploy started: $DEPLOY_FRONTEND"
+

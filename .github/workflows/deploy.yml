@@ -28,6 +28,9 @@ jobs:
         run: docker exec flask_app pytest
 
       # Run frontend unit tests
+      - name: Start nextjs_app container
+        run: docker start nextjs_app || docker run -d --name nextjs_app healthcare_sytem-frontend
+        
       - name: Run frontend unit tests
         run: docker exec -e CI=true nextjs_app npm test
 

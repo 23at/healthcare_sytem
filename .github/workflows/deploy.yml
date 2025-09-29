@@ -25,7 +25,7 @@ jobs:
 
       # Run backend tests
       - name: Run backend tests
-        run: docker exec flask_app pytest
+        run: docker exec flask_app pytest -n 1
 
       # Run frontend tests
       - name: Run frontend E2E tests

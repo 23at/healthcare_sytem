@@ -27,15 +27,27 @@ jobs:
       - name: Run backend tests
         run: docker exec flask_app pytest -n 1
 
-      # Run frontend tests
-      - name: Run frontend E2E tests
+      - name: Wait for frontend server
         run: |
-          docker run --rm \
-            --network host \
-            -v ${{ github.workspace }}/frontend:/e2e \
-            -w /e2e \
-            cypress/included:12.17.1 \
-            cypress run --headless --browser chrome --config-file cypress.config.js
+          echo "Waiting for frontend to start..."
+          for i in {1..20}; do
+            curl -s http://localhost:3000 && break
+            echo "Waiting..."
+            sleep 3
+          done
+          
+      - name: Run frontend E2E tests
+        run: docker exec -e CI=true frontend_app npx cypress run --headless --browser chrome
+
+      # Run frontend tests
+      #- name: Run frontend E2E tests
+       # run: |
+        #  docker run --rm \
+         #   --network host \
+          #  -v ${{ github.workspace }}/frontend:/e2e \
+           # -w /e2e \
+            #cypress/included:12.17.1 \
+            #cypress run --headless --browser chrome --config-file cypress.config.js
    
       
       # Optionally run integration / E2E tests

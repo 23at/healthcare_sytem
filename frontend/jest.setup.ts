@@ -1,5 +1,21 @@
 import "@testing-library/jest-dom";
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+global.IS_REACT_ACT_ENVIRONMENT = true;
+// jest.setup.ts
+// const originalError = console.error;
+// console.error = (...args) => {
+//   if (
+//     typeof args[0] === "string" &&
+//     args[0].includes("React.act is not a function")
+//   ) {
+//     return; // ignore this specific warning
+//   }
+//   originalError(...args);
+// };
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
@@ -7,16 +23,3 @@ jest.mock("next/navigation", () => ({
     prefetch: jest.fn(),
   }),
 }));
-
-// Suppress act warnings in CI
-const originalError = console.error;
-console.error = (...args) => {
-  if (
-    typeof args[0] === "string" &&
-    (args[0].includes("React.act is not a function") ||
-      args[0].includes("`ReactDOMTestUtils.act` is deprecated"))
-  ) {
-    return;
-  }
-  originalError(...args);
-};

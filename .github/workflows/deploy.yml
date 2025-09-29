@@ -27,7 +27,10 @@ jobs:
       - name: Run backend tests
         run: docker exec flask_app pytest
 
-      # Run frontend unit tests
+      # Run frontend tests
+      - name: Run frontend E2E tests
+        run: docker exec -e CI=true nextjs_app npm run cypress:run
+
       
       # Optionally run integration / E2E tests
       # - name: Run frontend integration tests

@@ -29,8 +29,12 @@ jobs:
 
       # Run frontend tests
       - name: Run frontend E2E tests
-        run: docker exec -e CI=true nextjs_app npm run cypress:run
-
+        run: |
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/frontend:/e2e \
+            cypress/included:12.17.1 \
+            --config baseUrl=http://localhost:3000
       
       # Optionally run integration / E2E tests
       # - name: Run frontend integration tests

@@ -6,7 +6,7 @@ const createJestConfig = nextJest({
 
 const customJestConfig = {
   testEnvironment: "jsdom",
-  testMatch: ["**/__test__/integration/**/*.integration.[jt]s?(x)"],
+  testMatch: ["**/__tests__/integration/**/*.integration.[jt]s?(x)"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1", // adjust if your code is in src/
     "\\.(css|less|scss|sass)$": "identity-obj-proxy", // mock styles

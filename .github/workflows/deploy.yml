@@ -35,7 +35,7 @@ jobs:
             -v ${{ github.workspace }}/frontend:/e2e \
             -w /e2e \
             cypress/included:12.17.1 \
-            cypress run --headless --browser chrome
+            cypress run --headless --browser chrome --config-file cypress.config.js
    
       
       # Optionally run integration / E2E tests

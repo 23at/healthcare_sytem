@@ -11,7 +11,11 @@ jest.mock("next/navigation", () => ({
 // Suppress act warnings in CI
 const originalError = console.error;
 console.error = (...args) => {
-  if (args[0].includes("React.act is not a function")) {
+  if (
+    typeof args[0] === "string" &&
+    (args[0].includes("React.act is not a function") ||
+      args[0].includes("`ReactDOMTestUtils.act` is deprecated"))
+  ) {
     return;
   }
   originalError(...args);

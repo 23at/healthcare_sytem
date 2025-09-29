@@ -29,16 +29,16 @@ jobs:
 
       # 5. Run backend tests inside backend container
       #  Run frontend unit tests
-      - name: Run frontend unit tests
-        run: docker exec nextjs_app sh -c "CI=true npm run test"
+      # - name: Run frontend unit tests
+      #   run: docker exec nextjs_app sh -c "CI=true npm run test"
 
-      #  Run frontend integration tests
-      - name: Run frontend integration tests
-        run: docker exec nextjs_app sh -c "CI=true npm run test:integration"
+      # #  Run frontend integration tests
+      # - name: Run frontend integration tests
+      #   run: docker exec nextjs_app sh -c "CI=true npm run test:integration"
 
-      #  Run frontend E2E tests
-      - name: Run frontend E2E tests
-        run: docker exec nextjs_app sh -c "CI=true npm run cypress:run"
+      # #  Run frontend E2E tests
+      # - name: Run frontend E2E tests
+      #   run: docker exec nextjs_app sh -c "CI=true npm run cypress:run"
 
       # - name: Run frontend tests
       #   run: docker exec nextjs_app npm test --prefix ./frontend

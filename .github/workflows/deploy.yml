@@ -54,19 +54,23 @@ jobs:
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_BACKEND_SERVICE_ID: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
+      RENDER_FRONTEND_SERVICE_ID: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
     steps:
       - name: Deploy backend to Render
         run: |
           DEPLOY_BACKEND=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys)
+            https://api.render.com/v1/services/$RENDER_BACKEND_SERVICE_ID/deploys)
           echo "Backend deploy started: $DEPLOY_BACKEND"
 
       - name: Deploy frontend to Render
         run: |
           DEPLOY_FRONTEND=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)
+            https://api.render.com/v1/services/$RENDER_FRONTEND_SERVICE_ID/deploys)
           echo "Frontend deploy started: $DEPLOY_FRONTEND"

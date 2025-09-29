@@ -50,7 +50,9 @@ jobs:
       # 7. Run backend tests (pytest inside container)
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
-
+      # 7b. Run frontend tests (inside container)
+      - name: Run frontend tests
+        run: docker exec frontend_app sh -c "npm ci && npm test -- --watchAll=false"
       # 9. Set version tag
       - name: Set version tag
         run: echo "VERSION_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV

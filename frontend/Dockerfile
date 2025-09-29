@@ -23,6 +23,7 @@ COPY package*.json ./
 RUN npm install 
 COPY . .
 RUN  npm test
+RUN npm run test:integration
 RUN npm run build
 
 # Production stage

@@ -41,7 +41,7 @@ jobs:
       #   run: docker exec nextjs_app sh -c "CI=true npm run cypress:run"
 
       - name: Run frontend tests
-        run: docker exec nextjs_app npm test --prefix ./frontend
+        run: docker exec nextjs_app npm test 
         env:
           CI: true
 

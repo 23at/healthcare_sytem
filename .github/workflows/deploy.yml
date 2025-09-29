@@ -61,7 +61,7 @@ jobs:
       # 8. Trigger Render deploy for frontend
       - name: Deploy frontend to Render
         run: |
-          DEPLOY_FRONTEND=$(curl -s -X POST \
+          DEPLOY_FRONTEND=$(curl -v -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys)

@@ -1,3 +1,5 @@
+/// <reference types="cypress" />
+
 describe("Healthcare App - E2E Tests", () => {
   // Reusable login function
   const loginAsAdmin = () => {

@@ -35,7 +35,8 @@ jobs:
             -v ${{ github.workspace }}/frontend:/e2e \
             -w /e2e \
             cypress/included:12.17.1 \
-            cypress run --headless --browser chrome --config baseUrl=http://localhost:3000
+            cypress run --headless --browser chrome
+   
       
       # Optionally run integration / E2E tests
       # - name: Run frontend integration tests

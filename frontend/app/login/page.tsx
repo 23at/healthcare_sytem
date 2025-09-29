@@ -29,7 +29,7 @@ const LoginPage = () => {
   const handleLogin = async () => {
     try {
       await api.post("/login", { username, password });
-      router.push("/");
+      router.push("/patients");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

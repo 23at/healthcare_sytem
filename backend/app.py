@@ -7,7 +7,7 @@ from functools import wraps
 import os
 
 
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
+
 
 @app.route("/health", methods=["GET"])
 def health():

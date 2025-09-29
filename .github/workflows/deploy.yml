@@ -37,7 +37,7 @@ jobs:
           done
           
       - name: Run frontend E2E tests
-        run: docker exec -e CI=true frontend_app npx cypress run --headless --browser chrome
+        run: docker exec -e CI=true nextjs_app npx cypress run --headless --browser chrome
 
       # Run frontend tests
       #- name: Run frontend E2E tests

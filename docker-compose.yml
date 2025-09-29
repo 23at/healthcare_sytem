@@ -21,4 +21,5 @@ services:
       - NEXT_PUBLIC_API_URL=http://backend:8080
     volumes:
       - ./frontend:/app
-    command: npm run build && npm start
+    command: tail -f /dev/null
+

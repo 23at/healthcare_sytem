@@ -30,6 +30,6 @@
     ".next/types/**/*.ts",
     "jest.integration.config.js",
     "cypress/e2e/home.cy.ts"
-  ],
+, "cypress/e2e/cypress.config.js"  ],
   "exclude": ["cypress.config.ts", "cypress", "node_modules"]
 }

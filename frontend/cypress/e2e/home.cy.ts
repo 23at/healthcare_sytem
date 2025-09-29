@@ -37,14 +37,6 @@ describe("Healthcare App - E2E Tests", () => {
       .should("match", /^\d+$/);
   });
 
-  // it("shows error for invalid login credentials", () => {
-  //   cy.visit("http://localhost:3000");
-  //   cy.get('input[placeholder="Username"]').type("wronguser");
-  //   cy.get('input[placeholder="Password"]').type("wrongpass");
-  //   cy.get("button").click();
-  //   cy.contains("Invalid username or password").should("be.visible");
-  // });
-
   it("navigates to Patients page and lists patients", () => {
     cy.contains("Patients").click();
     cy.get("ul").should("exist");

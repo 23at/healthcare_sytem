@@ -1,23 +1,70 @@
-version: "3.9"
+# version: "3.9"
 
+# services:
+#   backend:
+#     build: ./backend
+#     container_name: flask_app
+#     ports:
+#       - "8080:8080" # Flask runs on 8080
+#     volumes:
+#       - ./backend:/app
+#     environment:
+#       - FLASK_ENV=development
+#     command: python app.py
+
+#   frontend:
+#     build: ./frontend
+#     container_name: nextjs_app
+#     ports:
+#       - "3000:3000" # Next.js dev server
+#     environment:
+#       - NEXT_PUBLIC_API_URL=
+#       - NODE_ENV=production
+#     command: npm start
+# version: "3.9"
 services:
   backend:
     build: ./backend
     container_name: flask_app
     ports:
-      - "8080:8080" # Flask runs on 8080
-    volumes:
-      - ./backend:/app
+      - "8080:8080"
     environment:
       - FLASK_ENV=development
     command: python app.py
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
     container_name: nextjs_app
     ports:
-      - "3000:3000" # Next.js dev server
+      - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://healthcare-sytem.onrender.com/
+      - NEXT_PUBLIC_API_URL=http://flask_app:8080
       - NODE_ENV=production
-    command: npm start
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cypress:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.cypress
+    container_name: cypress_runner
+    environment:
+      - CYPRESS_BASE_URL=http://nextjs_app:3000
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

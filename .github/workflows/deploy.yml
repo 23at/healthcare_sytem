@@ -35,10 +35,15 @@ jobs:
             echo "Waiting..."
             sleep 3
           done
-          
       - name: Run frontend E2E tests
-        run: docker exec -e CI=true nextjs_app npx cypress run --headless --browser chrome
-
+        run: |
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/frontend:/e2e \
+            -w /e2e \
+            cypress/included:15.3.0 \
+            npx cypress run --headless --browser chrome
+      
       # Run frontend tests
       #- name: Run frontend E2E tests
        # run: |

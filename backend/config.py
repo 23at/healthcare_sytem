@@ -14,4 +14,4 @@ app.config['SESSION_COOKIE_SECURE'] = True
 
 
 db=SQLAlchemy(app)
-CORS(app,origins=["http://localhost:3000", "http://healthcare-sytem-1.onrender.com"], supports_credentials=True)
+CORS(app,origins=["http://localhost:3000", "https://healthcare-sytem-1.onrender.com"], supports_credentials=True)

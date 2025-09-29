@@ -30,10 +30,17 @@ jobs:
       # 5. Run backend tests inside backend container
       - name: Run backend tests
         run: docker exec flask_app pytest --maxfail=1 --disable-warnings -v
-      - name: Run frontend tests
-        run: docker exec nextjs_app npm test --prefix ./frontend
-        env:
-          CI: true
+      - name: Run frontend unit tests
+        run: docker exec nextjs_app npm run test -- CI=true
+      - name: Run frontend integration tests
+        run: docker exec nextjs_app npm run test:integration -- CI=true
+      - name: Run frontend E2E tests
+        run: docker exec nextjs_app npm run cypress:run
+
+      # - name: Run frontend tests
+      #   run: docker exec nextjs_app npm test --prefix ./frontend
+      #   env:
+      #     CI: true
 
       # 6. Tear down test containers
       - name: Tear down test containers

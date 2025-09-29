@@ -33,6 +33,7 @@ jobs:
           docker run --rm \
             --network host \
             -v ${{ github.workspace }}/frontend:/e2e \
+            -w /e2e \
             cypress/included:12.17.1 \
             cypress run --headless --browser chrome --config baseUrl=http://localhost:3000
       

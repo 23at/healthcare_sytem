@@ -25,14 +25,7 @@ jobs:
 
       # Run backend tests
       - name: Run backend tests
-        run: docker exec flask_app pytest -n 1 --junitxml=results/pytest-results.xml --html=results/pytest-report.html
-
-      # Upload pytest XML report
-      - name: Upload pytest XML report
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-xml
-          path: results/pytest-results.xml
+        run: docker exec flask_app pytest -n 1
 
      
       
